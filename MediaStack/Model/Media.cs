@@ -7,15 +7,15 @@ namespace MediaStack_Library.Model
     {
         public int ID { get; set; }
 
-        public int CategoryID { get; set; }
+        public int? CategoryID { get; set; }
 
         public Category Category { get; set; }
 
-        public int ArtistID { get; set; }
+        public int? ArtistID { get; set; }
 
         public Artist Artist { get; set; }
 
-        public int AlbumID { get; set; }
+        public int? AlbumID { get; set; }
 
         public Album Album { get; set; }
 
