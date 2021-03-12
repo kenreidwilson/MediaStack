@@ -1,4 +1,5 @@
-﻿using MediaStack_Library.Model;
+﻿using MediaStack_Library.Controllers;
+using MediaStack_Library.Model;
 using System;
 using System.Drawing;
 using Xabe.FFmpeg;
@@ -26,15 +27,15 @@ namespace MediaStack_Library.Utility
         {
             Image image = Image.FromFile(media.Path);
             Image thumb = image.GetThumbnailImage(150, 125, ()=>false, IntPtr.Zero);
-            thumb.Save(MediaFSController.THUMBNAIL_DIRECTORY + media.Hash);
+            thumb.Save(MediaFSController.GetMediaThumbnailPath(media));
             return true;
         }
 
         private bool createThumbnailFromVideo(Media media)
         {
             FFmpeg.Conversions.FromSnippet.Snapshot(
-                media.Path, 
-                MediaFSController.THUMBNAIL_DIRECTORY + media.Hash, 
+                media.Path,
+                MediaFSController.GetMediaThumbnailPath(media), 
                 TimeSpan.FromSeconds(0)).Start();
             return true;
         }
