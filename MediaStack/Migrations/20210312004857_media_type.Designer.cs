@@ -3,14 +3,16 @@ using System;
 using MediaStack_Library.Data_Access_Layer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace MediaStack_Library.Migrations
 {
     [DbContext(typeof(MediaStackContext))]
-    partial class MediaStackContextModelSnapshot : ModelSnapshot
+    [Migration("20210312004857_media_type")]
+    partial class media_type
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

@@ -24,6 +24,10 @@ namespace MediaStack_Library.Data_Access_Layer
                 .Property(entity => entity.Hash)
                 .IsRequired();
 
+            modelBuilder.Entity<Media>()
+                .Property(entity => entity.Type)
+                .IsRequired();
+
             modelBuilder.Entity<Tag>()
                 .HasKey(tag => tag.ID);
 
