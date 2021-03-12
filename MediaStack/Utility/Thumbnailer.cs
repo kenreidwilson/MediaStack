@@ -8,7 +8,7 @@ namespace MediaStack_Library.Utility
 {
     public class Thumbnailer
     {
-        public bool CreateThumbnail(Media media)
+        public virtual bool CreateThumbnail(Media media)
         {
             switch(media.Type)
             {

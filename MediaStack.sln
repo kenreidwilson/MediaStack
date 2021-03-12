@@ -3,7 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.31105.61
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MediaStack Library", "MediaStack\MediaStack Library.csproj", "{8AD94480-5F8E-4CA9-A2B4-BAE61718A187}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MediaStack Library", "MediaStack\MediaStack Library.csproj", "{8AD94480-5F8E-4CA9-A2B4-BAE61718A187}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MediaStack Testing Library", "MediaStack Testing Library\MediaStack Testing Library.csproj", "{559D1BA8-5AB8-47C9-BEBE-E2B2893E9569}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,6 +17,10 @@ Global
 		{8AD94480-5F8E-4CA9-A2B4-BAE61718A187}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8AD94480-5F8E-4CA9-A2B4-BAE61718A187}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8AD94480-5F8E-4CA9-A2B4-BAE61718A187}.Release|Any CPU.Build.0 = Release|Any CPU
+		{559D1BA8-5AB8-47C9-BEBE-E2B2893E9569}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{559D1BA8-5AB8-47C9-BEBE-E2B2893E9569}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{559D1BA8-5AB8-47C9-BEBE-E2B2893E9569}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{559D1BA8-5AB8-47C9-BEBE-E2B2893E9569}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
