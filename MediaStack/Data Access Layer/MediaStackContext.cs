@@ -15,6 +15,8 @@ namespace MediaStack_Library.Data_Access_Layer
 
         public DbSet<Artist> Artists { get; set; }
 
+        public MediaStackContext() => Database.EnsureCreated();
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<Media>()
@@ -40,11 +42,15 @@ namespace MediaStack_Library.Data_Access_Layer
                 .IsRequired();
 
             modelBuilder.Entity<Album>()
-                .HasIndex(entity => entity.Name)
+                .HasIndex(entity => new { entity.Name, entity.ArtistID })
                 .IsUnique();
 
             modelBuilder.Entity<Album>()
                 .Property(entity => entity.Name)
+                .IsRequired();
+
+            modelBuilder.Entity<Album>()
+                .Property(entity => entity.ArtistID)
                 .IsRequired();
 
             modelBuilder.Entity<Artist>()

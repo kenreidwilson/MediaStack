@@ -15,7 +15,7 @@ namespace MediaStack_Library_Tests.Data_Access_Layer.Repository_Tests
         {
             this.context = new MockMediaStackContext();
             this.entityRepository = new Repository<Category>(this.context);
-            this.entityRepository.Insert(new Category { Id = 1, Name = "Test Category" });
+            this.entityRepository.Insert(new Category { ID = 1, Name = "Test Category" });
             this.context.SaveChanges();
         }
 
