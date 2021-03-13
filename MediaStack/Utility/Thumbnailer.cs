@@ -2,6 +2,7 @@
 using MediaStack_Library.Model;
 using System;
 using System.Drawing;
+using System.IO;
 using Xabe.FFmpeg;
 
 namespace MediaStack_Library.Utility
@@ -10,6 +11,12 @@ namespace MediaStack_Library.Utility
     {
         public virtual bool CreateThumbnail(Media media)
         {
+            var asdf = Directory.GetCurrentDirectory();
+            if (media.Path == null || !File.Exists(media.Path))
+            {
+                return false;
+            }
+
             switch(media.Type)
             {
                 case (MediaType.Image):
