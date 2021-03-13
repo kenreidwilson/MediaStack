@@ -12,8 +12,8 @@ namespace MediaStack_Library.Controllers
 {
     public class MediaFSController
     {
-        public static string MEDIA_DIRECTORY = "";
-        public static string THUMBNAIL_DIRECTORY = "";
+        public static string MEDIA_DIRECTORY = @$"{Environment.GetEnvironmentVariable("MEDIA_DIRECTORY")}";
+        public static string THUMBNAIL_DIRECTORY = @$"{Environment.GetEnvironmentVariable("THUMBNAIL_DIRECTORY")}";
 
         protected IUnitOfWork unitOfWork;
         protected Thumbnailer thumbnailer = new Thumbnailer();
@@ -34,22 +34,38 @@ namespace MediaStack_Library.Controllers
         /// </summary>
         /// <param name="filePath">The file path.</param>
         /// <returns>Media or null.</returns>
-        public Media InitialMedia(string filePath)
+        public Media InitializeMedia(string filePath, string hash = null)
         {
             Media media = new Media{ Path = filePath };
 
             using (var stream = File.OpenRead(filePath))
             {
-                media.Hash = CalculateHash(stream);
-                media.Type = (MediaType)DetermineMediaType(stream);
+                media.Hash = hash == null ? CalculateHash(stream) : hash;
+                media.Type = DetermineMediaType(stream);
+                if (media.Type == null)
+                {
+                    return null;
+                }
             }
 
-            if (!this.thumbnailer.CreateThumbnail(media))
+            if (!File.Exists(GetMediaThumbnailPath(media)))
             {
-                return null;
+                if (!this.thumbnailer.CreateThumbnail(media))
+                {
+                    return null;
+                }
             }
 
-            this.UpdateMedia(media);
+            this.UpdateMedia(media, filePath);
+
+            if (media.ID == 0)
+            {
+                this.unitOfWork.Media.Insert(media);
+            }
+            else
+            {
+                this.unitOfWork.Media.Update(media);
+            }
 
             return media;
         }
@@ -73,9 +89,18 @@ namespace MediaStack_Library.Controllers
 
             dynamic mediaReferences = this.deriveMediaReferences(filePath);
 
-            media.Category = this.findOrCreateCategory(mediaReferences.Category);
-            media.Artist = this.findOrCreateArtist(mediaReferences.Artist);
-            media.Album = this.findOrCreateAlbum(mediaReferences.Album);
+            if (mediaReferences.Category != null)
+            {
+                media.Category = this.findOrCreateCategory(mediaReferences.Category);
+                if (mediaReferences.Artist != null)
+                {
+                    media.Artist = this.findOrCreateArtist(mediaReferences.Artist);
+                    if (mediaReferences.Album != null)
+                    {
+                        media.Album = this.findOrCreateAlbum(mediaReferences.Album, media.Artist);
+                    }
+                }
+            }
 
             return media;
         }
@@ -119,7 +144,7 @@ namespace MediaStack_Library.Controllers
         /// <returns></returns>
         public static string GetMediaThumbnailPath(Media media)
         {
-            return $@"{THUMBNAIL_DIRECTORY}{media.Hash}";
+            return $@"{THUMBNAIL_DIRECTORY}{Path.DirectorySeparatorChar}{media.Hash}";
         }
 
         /// <summary>
@@ -138,8 +163,19 @@ namespace MediaStack_Library.Controllers
 
         public static MediaType? DetermineMediaType(FileStream stream)
         {
-            switch (stream.GetFileType().Mime)
+            var fileType = stream.GetFileType();
+
+            if (fileType == null)
             {
+                return null;
+            }
+
+            switch (fileType.Mime)
+            {
+                case ("video/mp4"):
+                    return MediaType.Video;
+                case ("video/mkv"):
+                    return MediaType.Video;
                 default:
                     return MediaType.Image;
             }
@@ -151,7 +187,11 @@ namespace MediaStack_Library.Controllers
 
             string path = filePath.Replace(MEDIA_DIRECTORY, "");
             string[] pathSplit = path.Split(Path.DirectorySeparatorChar);
-            pathSplit.Select(name => name != pathSplit.Last());
+            pathSplit = pathSplit.Take(pathSplit.Count() - 1).ToArray();
+
+            mediaReferences.Category = null;
+            mediaReferences.Artist = null;
+            mediaReferences.Album = null;
 
             foreach (string name in pathSplit)
             {
@@ -181,24 +221,24 @@ namespace MediaStack_Library.Controllers
             if (category == null)
             {
                 category = new Category { Name = name };
+                this.unitOfWork.Categories.Insert(category);
             }
 
-            this.unitOfWork.Categories.Insert(category);
             return category;
         }
 
-        private Album findOrCreateAlbum(string name)
+        private Album findOrCreateAlbum(string name, Artist artist)
         {
             Album album = this.unitOfWork.Albums.Get()
-                .Where(album => album.Name == name)
+                .Where(album => album.Name == name && album.ArtistID == artist.ID)
                 .FirstOrDefault();
 
             if (album == null)
             {
-                album = new Album { Name = name };
+                album = new Album { Name = name, Artist = artist };
+                this.unitOfWork.Albums.Insert(album);
             }
 
-            this.unitOfWork.Albums.Insert(album);
             return album;
         }
 
@@ -211,9 +251,9 @@ namespace MediaStack_Library.Controllers
             if (artist == null)
             {
                 artist = new Artist { Name = name };
+                this.unitOfWork.Artists.Insert(artist);
             }
 
-            this.unitOfWork.Artists.Insert(artist);
             return artist;
         }
     }

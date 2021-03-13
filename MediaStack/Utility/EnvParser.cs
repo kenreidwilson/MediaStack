@@ -1,0 +1,30 @@
+﻿using System;
+using System.IO;
+
+namespace MediaStack_Library.Utility
+{
+    public class EnvParser
+    {
+        public static void ParseEnvFromFile(string filePath)
+        {
+            if (!File.Exists(filePath))
+            {
+                return;
+            }
+
+            foreach (var line in File.ReadAllLines(filePath))
+            {
+                var parts = line.Split(
+                    '=',
+                    StringSplitOptions.RemoveEmptyEntries);
+
+                if (parts.Length != 2)
+                {
+                    continue;
+                }
+
+                Environment.SetEnvironmentVariable(parts[0], parts[1]);
+            }
+        }
+    }
+}

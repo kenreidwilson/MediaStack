@@ -42,8 +42,8 @@ namespace MediaStack_Library.Utility
         {
             FFmpeg.Conversions.FromSnippet.Snapshot(
                 media.Path,
-                MediaFSController.GetMediaThumbnailPath(media), 
-                TimeSpan.FromSeconds(0)).Start();
+                MediaFSController.GetMediaThumbnailPath(media),
+                TimeSpan.FromSeconds(0));
             return true;
         }
     }
