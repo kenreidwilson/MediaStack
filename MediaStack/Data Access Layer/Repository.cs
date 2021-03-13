@@ -20,7 +20,7 @@ namespace MediaStack_Library.Data_Access_Layer
 
         public virtual IQueryable<T> Get(Expression<Func<T, bool>> expression = null)
         {
-            return this.context.Set<T>().Where(expression);
+            return expression == null ? this.context.Set<T>() : this.context.Set<T>().Where(expression);
         }
 
         public virtual void Update(T entity)

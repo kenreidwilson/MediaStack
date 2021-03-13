@@ -2,9 +2,9 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace MediaStack_Testing_Library.Fakes
+namespace MediaStack_Testing_Library.Mocks
 {
-    public class FakeMediaStackContext : MediaStackContext
+    public class MockMediaStackContext : MediaStackContext
     {
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
