@@ -25,7 +25,7 @@ namespace MediaStack_Library.Model
 
         public string Path { get; set; }
 
-        public MediaType Type { get; set; }
+        public MediaType? Type { get; set; }
 
         public DateTime Created { get; set; } = DateTime.Now;
     }
