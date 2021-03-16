@@ -23,6 +23,11 @@ namespace MediaStack_Library.Data_Access_Layer
             return expression == null ? this.context.Set<T>() : this.context.Set<T>().Where(expression);
         }
 
+        public virtual IQueryable<T> GetLocal(Expression<Func<T, bool>> expression = null)
+        {
+            return expression == null ? this.context.Set<T>().Local.AsQueryable() : this.context.Set<T>().Local.AsQueryable().Where(expression);
+        }
+
         public virtual void Update(T entity)
         {
             try

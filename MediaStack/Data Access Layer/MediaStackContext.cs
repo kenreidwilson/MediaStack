@@ -27,6 +27,10 @@ namespace MediaStack_Library.Data_Access_Layer
                 .IsRequired();
 
             modelBuilder.Entity<Media>()
+                .HasIndex(entity => entity.Hash)
+                .IsUnique();
+
+            modelBuilder.Entity<Media>()
                 .Property(entity => entity.Type)
                 .IsRequired();
 

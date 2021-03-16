@@ -4,7 +4,7 @@ using System;
 
 namespace MediaStack_Library.Data_Access_Layer
 {
-    public class UnitOfWork<T> : IUnitOfWork where T : DbContext
+    public class UnitOfWork<T> : IUnitOfWork, IDisposable where T : DbContext
     {
         private DbContext context;
 
@@ -28,6 +28,14 @@ namespace MediaStack_Library.Data_Access_Layer
             this.Tags = new Repository<Tag>(this.context);
         }
 
-        public void Save() => this.context.SaveChanges();
+        public void Save()
+        {
+            this.context.SaveChanges();
+        }
+
+        public void Dispose()
+        {
+            this.context.Dispose();
+        }
     }
 }

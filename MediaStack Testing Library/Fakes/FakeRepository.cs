@@ -45,6 +45,11 @@ namespace MediaStack_Testing_Library.Fakes
             throw new NotImplementedException();
         }
 
+        public IQueryable<T> GetLocal(Expression<Func<T, bool>> expression = null)
+        {
+            throw new NotImplementedException();
+        }
+
         #endregion
     }
 }

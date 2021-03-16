@@ -11,7 +11,6 @@ namespace MediaStack_Library.Utility
     {
         public virtual bool CreateThumbnail(Media media)
         {
-            var asdf = Directory.GetCurrentDirectory();
             if (media.Path == null || !File.Exists(media.Path))
             {
                 return false;
@@ -32,10 +31,22 @@ namespace MediaStack_Library.Utility
 
         private bool createThumbnailFromImage(Media media)
         {
-            Image image = Image.FromFile(media.Path);
-            Image thumb = image.GetThumbnailImage(150, 125, ()=>false, IntPtr.Zero);
-            thumb.Save(MediaFSController.GetMediaThumbnailPath(media));
-            return true;
+            try
+            {
+                Image image = Image.FromFile(media.Path);
+                Image thumb = image.GetThumbnailImage(150, 125, () => false, IntPtr.Zero);
+                thumb.Save(MediaFSController.GetMediaThumbnailPath(media));
+                return true;
+            } 
+            catch (OutOfMemoryException)
+            {
+                return false;
+            } 
+            catch (IOException)
+            {
+                return false;
+            }
+            
         }
 
         private bool createThumbnailFromVideo(Media media)

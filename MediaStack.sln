@@ -9,6 +9,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MediaStack Testing Library"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MediaStack Library Tests", "MediaStack Library Tests\MediaStack Library Tests.csproj", "{08E66FCB-A5F0-4450-B352-9A65BC7D4C22}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MediaStack Importer", "MediaStack Importer\MediaStack Importer.csproj", "{AECAA9EA-4187-437D-BCE9-EEF2A3F0AF06}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MediaStack Test App", "MediaStack Test App\MediaStack Test App.csproj", "{4D8EBB7D-30DA-4C78-B8AA-BE17AC86EBA8}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +31,14 @@ Global
 		{08E66FCB-A5F0-4450-B352-9A65BC7D4C22}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{08E66FCB-A5F0-4450-B352-9A65BC7D4C22}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{08E66FCB-A5F0-4450-B352-9A65BC7D4C22}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AECAA9EA-4187-437D-BCE9-EEF2A3F0AF06}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AECAA9EA-4187-437D-BCE9-EEF2A3F0AF06}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AECAA9EA-4187-437D-BCE9-EEF2A3F0AF06}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AECAA9EA-4187-437D-BCE9-EEF2A3F0AF06}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4D8EBB7D-30DA-4C78-B8AA-BE17AC86EBA8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4D8EBB7D-30DA-4C78-B8AA-BE17AC86EBA8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4D8EBB7D-30DA-4C78-B8AA-BE17AC86EBA8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4D8EBB7D-30DA-4C78-B8AA-BE17AC86EBA8}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

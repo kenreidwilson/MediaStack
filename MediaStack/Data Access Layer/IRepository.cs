@@ -10,6 +10,8 @@ namespace MediaStack_Library.Data_Access_Layer
 
         IQueryable<T> Get(Expression<Func<T, bool>> expression = null);
 
+        IQueryable<T> GetLocal(Expression<Func<T, bool>> expression = null);
+
         void Update(T entity);
 
         void Delete(T entity);

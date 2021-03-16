@@ -5,7 +5,7 @@ namespace MediaStack_Testing_Library.Mocks
 {
     public class MockMediaFSController : MediaFSController
     {
-        public MockMediaFSController(IUnitOfWork unitOfWork) : base(unitOfWork) 
+        public MockMediaFSController(IUnitOfWork unitOfWork) : base() 
         {
             this.thumbnailer = new MockThumbnailer();
         }

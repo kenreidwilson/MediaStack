@@ -15,14 +15,9 @@ namespace MediaStack_Library.Controllers
         public static string MEDIA_DIRECTORY = @$"{Environment.GetEnvironmentVariable("MEDIA_DIRECTORY")}";
         public static string THUMBNAIL_DIRECTORY = @$"{Environment.GetEnvironmentVariable("THUMBNAIL_DIRECTORY")}";
 
-        protected IUnitOfWork unitOfWork;
         protected Thumbnailer thumbnailer = new Thumbnailer();
 
-        public MediaFSController(IUnitOfWork unitOfWork)
-        {
-            // TODO: Verifiy Media and Thumbnail directories.
-            this.unitOfWork = unitOfWork;
-        }
+        private readonly object unitOfWorkLock = new object();
 
         /// <summary>
         ///     Uses provided filePath to initialize a uniquely hashed media:
@@ -34,37 +29,77 @@ namespace MediaStack_Library.Controllers
         /// </summary>
         /// <param name="filePath">The file path.</param>
         /// <returns>Media or null.</returns>
-        public Media InitializeMedia(string filePath, string hash = null)
+        public Media CreateOrUpdateMediaFromFile(string filePath, IUnitOfWork unitOfWork)
         {
-            Media media = new Media{ Path = filePath };
-
+            Media media = null;
             using (var stream = File.OpenRead(filePath))
             {
-                media.Hash = hash == null ? CalculateHash(stream) : hash;
-                media.Type = DetermineMediaType(stream);
-                if (media.Type == null)
+                string hash = calculateHash(stream);
+
+                lock (unitOfWorkLock)
                 {
-                    return null;
+                    media = unitOfWork.Media.Get().Where(media => media.Hash == hash).FirstOrDefault();
+
+                    if (media == null)
+                    {
+                        media = unitOfWork.Media.GetLocal().Where(media => media.Hash == hash).FirstOrDefault();
+                    }
+                }
+
+                if (media == null)
+                {
+                    MediaType? type = determineMediaType(stream);
+                    if (type == null)
+                    {
+                        return null;
+                    }
+
+                    media = new Media { Path = filePath, Hash = hash, Type = type };
+                    lock (unitOfWorkLock)
+                    {
+                        unitOfWork.Media.Insert(media);
+                    }
+
+                    if (!File.Exists(GetMediaThumbnailPath(media)))
+                    {
+                        if (!this.thumbnailer.CreateThumbnail(media))
+                        {
+                            return null;
+                        }
+                    }
+                }
+                else if (filePath.Equals(media.Path))
+                {
+                    return media;
+                }
+                else
+                {
+                    if (File.Exists(media.Path))
+                    {
+                        lock (unitOfWorkLock)
+                        {
+                            Media potentialDuplicate = unitOfWork.Media.Get()
+                                .Where(m => m.Path == media.Path && m.Hash == hash)
+                                .FirstOrDefault();
+                            if (potentialDuplicate != null)
+                            {
+                                Console.WriteLine("Duplicate");
+                                return null;
+                            }
+                        }
+                    }
+                    media.Path = filePath;
                 }
             }
 
-            if (!File.Exists(GetMediaThumbnailPath(media)))
+            this.UpdateMedia(media, unitOfWork);
+
+            if (media.ID != 0)
             {
-                if (!this.thumbnailer.CreateThumbnail(media))
+                lock (unitOfWorkLock)
                 {
-                    return null;
+                    unitOfWork.Media.Update(media);
                 }
-            }
-
-            this.UpdateMedia(media, filePath);
-
-            if (media.ID == 0)
-            {
-                this.unitOfWork.Media.Insert(media);
-            }
-            else
-            {
-                this.unitOfWork.Media.Update(media);
             }
 
             return media;
@@ -75,34 +110,39 @@ namespace MediaStack_Library.Controllers
         /// </summary>
         /// <param name="filePath"></param>
         /// <returns>Updated Media</returns>
-        public Media UpdateMedia(Media media, string filePath = null)
+        public Media UpdateMedia(Media media, IUnitOfWork unitOfWork)
         {
-            if (filePath != null)
-            {
-                media.Path = filePath;
-            }
-
             if (media.Path == null)
             {
                 throw new ArgumentException("No Media Path.");
             }
 
-            dynamic mediaReferences = this.deriveMediaReferences(filePath);
+            dynamic mediaReferences = this.deriveMediaReferences(media.Path);
 
             if (mediaReferences.Category != null)
             {
-                media.Category = this.findOrCreateCategory(mediaReferences.Category);
+                media.Category = this.findOrCreateCategory(mediaReferences.Category, unitOfWork);
                 if (mediaReferences.Artist != null)
                 {
-                    media.Artist = this.findOrCreateArtist(mediaReferences.Artist);
+                    media.Artist = this.findOrCreateArtist(mediaReferences.Artist, unitOfWork);
                     if (mediaReferences.Album != null)
                     {
-                        media.Album = this.findOrCreateAlbum(mediaReferences.Album, media.Artist);
+                        media.Album = this.findOrCreateAlbum(mediaReferences.Album, media.Artist, unitOfWork);
                     }
                 }
             }
 
             return media;
+        }
+
+
+        public void DisableMedia(Media media, IUnitOfWork unitOfWork)
+        {
+            media.Path = null;
+            lock(unitOfWorkLock)
+            {
+                unitOfWork.Media.Update(media);
+            }
         }
 
         /// <summary>
@@ -152,7 +192,7 @@ namespace MediaStack_Library.Controllers
         /// </summary>
         /// <param name="stream"></param>
         /// <returns></returns>
-        public static string CalculateHash(FileStream stream)
+        private static string calculateHash(FileStream stream)
         {
             using (var md5 = MD5.Create())
             {
@@ -161,7 +201,7 @@ namespace MediaStack_Library.Controllers
             }
         }
 
-        public static MediaType? DetermineMediaType(FileStream stream)
+        private static MediaType? determineMediaType(FileStream stream)
         {
             var fileType = stream.GetFileType();
 
@@ -212,49 +252,79 @@ namespace MediaStack_Library.Controllers
             return mediaReferences;
         }
 
-        private Category findOrCreateCategory(string name)
+        private Category findOrCreateCategory(string name, IUnitOfWork unitOfWork)
         {
-            Category category = this.unitOfWork.Categories.Get()
-                .Where(category => category.Name == name)
-                .FirstOrDefault();
-
-            if (category == null)
+            lock (unitOfWorkLock)
             {
-                category = new Category { Name = name };
-                this.unitOfWork.Categories.Insert(category);
-            }
+                Category category = unitOfWork.Categories.Get()
+                    .Where(category => category.Name == name)
+                    .FirstOrDefault();
 
-            return category;
+                if (category == null)
+                {
+                    category = unitOfWork.Categories.GetLocal()
+                        .Where(category => category.Name == name)
+                        .FirstOrDefault();
+                }
+
+                if (category == null)
+                {
+                    category = new Category { Name = name };
+                    unitOfWork.Categories.Insert(category);
+                }
+
+                return category;
+            }
         }
 
-        private Album findOrCreateAlbum(string name, Artist artist)
+        private Artist findOrCreateArtist(string name, IUnitOfWork unitOfWork)
         {
-            Album album = this.unitOfWork.Albums.Get()
-                .Where(album => album.Name == name && album.ArtistID == artist.ID)
-                .FirstOrDefault();
-
-            if (album == null)
+            lock (unitOfWorkLock)
             {
-                album = new Album { Name = name, Artist = artist };
-                this.unitOfWork.Albums.Insert(album);
-            }
+                Artist artist = unitOfWork.Artists.Get()
+                    .Where(artist => artist.Name == name)
+                    .FirstOrDefault();
 
-            return album;
+                if (artist == null)
+                {
+                    artist = unitOfWork.Artists.GetLocal()
+                        .Where(artist => artist.Name == name)
+                        .FirstOrDefault();
+                }
+
+                if (artist == null)
+                {
+                    artist = new Artist { Name = name };
+                    unitOfWork.Artists.Insert(artist);
+                }
+
+                return artist;
+            }
         }
 
-        private Artist findOrCreateArtist(string name)
+        private Album findOrCreateAlbum(string name, Artist artist, IUnitOfWork unitOfWork)
         {
-            Artist artist = this.unitOfWork.Artists.Get()
-                .Where(artist => artist.Name == name)
-                .FirstOrDefault();
-
-            if (artist == null)
+            lock (unitOfWorkLock)
             {
-                artist = new Artist { Name = name };
-                this.unitOfWork.Artists.Insert(artist);
-            }
+                Album album = unitOfWork.Albums.Get()
+                    .Where(album => album.Name == name && album.ArtistID == artist.ID)
+                    .FirstOrDefault();
 
-            return artist;
+                if (album == null)
+                {
+                    album = unitOfWork.Albums.GetLocal()
+                        .Where(album => album.Name == name)
+                        .FirstOrDefault();
+                }
+
+                if (album == null)
+                {
+                    album = new Album { Name = name, Artist = artist };
+                    unitOfWork.Albums.Insert(album);
+                }
+
+                return album;
+            }
         }
     }
 }
