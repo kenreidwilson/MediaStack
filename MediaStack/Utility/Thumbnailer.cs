@@ -1,5 +1,4 @@
-﻿using MediaStack_Library.Controllers;
-using MediaStack_Library.Model;
+﻿using MediaStack_Library.Model;
 using System;
 using System.Drawing;
 using System.IO;
@@ -9,6 +8,8 @@ namespace MediaStack_Library.Utility
 {
     public class Thumbnailer
     {
+        protected string THUMBNAIL_DIRECTORY = "";
+
         public virtual bool CreateThumbnail(Media media)
         {
             if (media.Path == null || !File.Exists(media.Path))
@@ -35,7 +36,7 @@ namespace MediaStack_Library.Utility
             {
                 Image image = Image.FromFile(media.Path);
                 Image thumb = image.GetThumbnailImage(150, 125, () => false, IntPtr.Zero);
-                thumb.Save(MediaFSController.GetMediaThumbnailPath(media));
+                thumb.Save(THUMBNAIL_DIRECTORY + media.Hash);
                 return true;
             } 
             catch (OutOfMemoryException)
@@ -53,7 +54,7 @@ namespace MediaStack_Library.Utility
         {
             FFmpeg.Conversions.FromSnippet.Snapshot(
                 media.Path,
-                MediaFSController.GetMediaThumbnailPath(media),
+                THUMBNAIL_DIRECTORY + media.Hash,
                 TimeSpan.FromSeconds(0));
             return true;
         }

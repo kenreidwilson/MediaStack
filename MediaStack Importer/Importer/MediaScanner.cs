@@ -5,7 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Threading.Tasks;
+using System.Threading;
 
 namespace MediaStack_Importer.Importer
 {
@@ -16,6 +16,8 @@ namespace MediaStack_Importer.Importer
     public class MediaScanner
     {
         protected MediaFSController controller;
+
+        private const int BATCH_SIZE = 100;
 
         public MediaScanner(MediaFSController controller)
         {
@@ -33,39 +35,91 @@ namespace MediaStack_Importer.Importer
 
         private void searchForNewMedia()
         {
-            List<Task> tasks = new List<Task>();
-            using (var unitOfWork = new UnitOfWork<MediaStackContext>())
+            using (ManualResetEvent resetEvent = new ManualResetEvent(false))
             {
-                foreach (string filePath in Directory.GetFiles(MediaFSController.MEDIA_DIRECTORY, "*", SearchOption.AllDirectories))
+                using (var unitOfWork = new UnitOfWork<MediaStackContext>())
                 {
-                    tasks.Add(Task.Factory.StartNew(() => this.controller.CreateOrUpdateMediaFromFile(filePath, unitOfWork)));
+                    var filePaths = Directory.GetFiles(MediaFSController.MEDIA_DIRECTORY, "*", SearchOption.AllDirectories);
+                    int counter = 0;
+                    object counterLock = new object();
+                    foreach (string filePath in filePaths)
+                    {
+                        ThreadPool.QueueUserWorkItem(callBack =>
+                        {
+                            try
+                            {
+                                this.controller.CreateOrUpdateMediaFromFile(filePath, unitOfWork);
+                            }
+                            catch (Exception) { } 
+                            finally
+                            {
+                                lock (counterLock)
+                                {
+                                    counter++;
+                                    if (counter % BATCH_SIZE == 0)
+                                    {
+                                        this.controller.Save(unitOfWork);
+                                    }
+                                    if (counter == filePaths.Length)
+                                    {
+                                        resetEvent.Set();
+                                    }
+                                }
+                            }
+                        });
+                    }
+                    resetEvent.WaitOne();
+                    this.controller.Save(unitOfWork);
                 }
-                Task.WaitAll(tasks.ToArray());
-                unitOfWork.Save();
             }
         }
 
         private void verifyAllMedia()
         {
-            List<Task> tasks = new List<Task>();
-            using (var unitOfWork = new UnitOfWork<MediaStackContext>())
+            using (ManualResetEvent resetEvent = new ManualResetEvent(false))
             {
-                foreach (Media media in unitOfWork.Media.Get().Where(media => media.Path != null).ToList())
+                using (var unitOfWork = new UnitOfWork<MediaStackContext>())
                 {
-                    tasks.Add(Task.Factory.StartNew(() =>
+                    int counter = 0;
+                    object counterLock = new object();
+                    List<Media> medias = unitOfWork.Media.Get().Where(media => media.Path != null).ToList();
+                    foreach (Media media in medias)
                     {
-                        if (!File.Exists(media.Path))
+                        ThreadPool.QueueUserWorkItem(callBack =>
                         {
-                            this.controller.DisableMedia(media, unitOfWork);
-                        }
-                        else
-                        {
-                            this.controller.CreateOrUpdateMediaFromFile(media.Path, unitOfWork);
-                        }
-                    }));
+                            try
+                            {
+                                if (!File.Exists(media.Path))
+                                {
+                                    this.controller.DisableMedia(media, unitOfWork);
+                                }
+                                else
+                                {
+                                    this.controller.CreateOrUpdateMediaFromFile(media.Path, unitOfWork);
+                                }
+                            }
+                            catch (Exception) { }
+                            finally
+                            {
+                                lock (counterLock)
+                                {
+                                    counter++;
+                                    if (counter % BATCH_SIZE == 0)
+                                    {
+                                        this.controller.Save(unitOfWork);
+                                    }
+                                    if (counter == medias.Count)
+                                    {
+                                        resetEvent.Set();
+                                    }
+                                }
+                            }
+
+                        });
+                    }
+                    resetEvent.WaitOne();
+                    this.controller.Save(unitOfWork);
                 }
-                Task.WaitAll(tasks.ToArray());
-                unitOfWork.Save();
             }
         }
     }

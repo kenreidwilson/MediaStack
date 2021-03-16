@@ -13,9 +13,7 @@ namespace MediaStack_Library.Controllers
     public class MediaFSController
     {
         public static string MEDIA_DIRECTORY = @$"{Environment.GetEnvironmentVariable("MEDIA_DIRECTORY")}";
-        public static string THUMBNAIL_DIRECTORY = @$"{Environment.GetEnvironmentVariable("THUMBNAIL_DIRECTORY")}";
-
-        protected Thumbnailer thumbnailer = new Thumbnailer();
+        //public static string THUMBNAIL_DIRECTORY = @$"{Environment.GetEnvironmentVariable("THUMBNAIL_DIRECTORY")}";
 
         private readonly object unitOfWorkLock = new object();
 
@@ -39,11 +37,6 @@ namespace MediaStack_Library.Controllers
                 lock (unitOfWorkLock)
                 {
                     media = unitOfWork.Media.Get().Where(media => media.Hash == hash).FirstOrDefault();
-
-                    if (media == null)
-                    {
-                        media = unitOfWork.Media.GetLocal().Where(media => media.Hash == hash).FirstOrDefault();
-                    }
                 }
 
                 if (media == null)
@@ -57,15 +50,11 @@ namespace MediaStack_Library.Controllers
                     media = new Media { Path = filePath, Hash = hash, Type = type };
                     lock (unitOfWorkLock)
                     {
-                        unitOfWork.Media.Insert(media);
-                    }
-
-                    if (!File.Exists(GetMediaThumbnailPath(media)))
-                    {
-                        if (!this.thumbnailer.CreateThumbnail(media))
+                        if (unitOfWork.Media.GetLocal().Where(media => media.Hash == hash).FirstOrDefault() != null)
                         {
                             return null;
                         }
+                        unitOfWork.Media.Insert(media);
                     }
                 }
                 else if (filePath.Equals(media.Path))
@@ -83,7 +72,6 @@ namespace MediaStack_Library.Controllers
                                 .FirstOrDefault();
                             if (potentialDuplicate != null)
                             {
-                                Console.WriteLine("Duplicate");
                                 return null;
                             }
                         }
@@ -135,6 +123,13 @@ namespace MediaStack_Library.Controllers
             return media;
         }
 
+        public void Save(IUnitOfWork unitOfWork)
+        {
+            lock (unitOfWorkLock)
+            {
+                unitOfWork.Save();
+            }
+        }
 
         public void DisableMedia(Media media, IUnitOfWork unitOfWork)
         {
@@ -177,24 +172,13 @@ namespace MediaStack_Library.Controllers
         }
 
         /// <summary>
-        ///     Determins where the Media's thumbnail should be stored
-        ///     based on its hash.
-        /// </summary>
-        /// <param name="media"></param>
-        /// <returns></returns>
-        public static string GetMediaThumbnailPath(Media media)
-        {
-            return $@"{THUMBNAIL_DIRECTORY}{Path.DirectorySeparatorChar}{media.Hash}";
-        }
-
-        /// <summary>
         ///     Returns a unique file hash from the provided stream.
         /// </summary>
         /// <param name="stream"></param>
         /// <returns></returns>
         private static string calculateHash(FileStream stream)
         {
-            using (var md5 = MD5.Create())
+            using (var md5 = SHA1.Create())
             {
                 var hash = md5.ComputeHash(stream);
                 return BitConverter.ToString(hash).Replace("-", "").ToLowerInvariant();
@@ -216,8 +200,16 @@ namespace MediaStack_Library.Controllers
                     return MediaType.Video;
                 case ("video/mkv"):
                     return MediaType.Video;
-                default:
+                case ("video/x-m4v"):
+                    return MediaType.Video;
+                case ("image/jpeg"):
                     return MediaType.Image;
+                case ("image/png"):
+                    return MediaType.Image;
+                case ("image/gif"):
+                    return MediaType.Animated_Image;
+                default:
+                    return null;
             }
         }
 
