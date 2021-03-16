@@ -20,6 +20,8 @@ namespace MediaStack_Importer.Importer
 
         protected FileSystemWatcher watcher;
 
+        private readonly object controllerLock = new object();
+
         private List<string> ignoreExtensionList = new List<string>
         {
             ".part", ".crdownload"
@@ -76,8 +78,11 @@ namespace MediaStack_Importer.Importer
                 {
                     using (var unitOfWork = new UnitOfWork<MediaStackContext>())
                     {
-                        this.controller.CreateOrUpdateMediaFromFile(e.FullPath, unitOfWork);
-                        unitOfWork.Save();
+                        lock (controllerLock)
+                        {
+                            this.controller.CreateOrUpdateMediaFromFile(e.FullPath, unitOfWork);
+                            this.controller.Save(unitOfWork);
+                        } 
                     }
                 }
                 catch (IOException)
@@ -102,12 +107,16 @@ namespace MediaStack_Importer.Importer
                 {
                     using (var unitOfWork = new UnitOfWork<MediaStackContext>())
                     {
-                        this.controller.CreateOrUpdateMediaFromFile(e.FullPath, unitOfWork);
-                        unitOfWork.Save();
+                        lock (controllerLock)
+                        {
+                            this.controller.CreateOrUpdateMediaFromFile(e.FullPath, unitOfWork);
+                            this.controller.Save(unitOfWork);
+                        }
                     }
                 }
                 catch (IOException)
                 {
+                    Console.WriteLine("Couldn't Read...");
                     return;
                 } 
             });
@@ -123,16 +132,22 @@ namespace MediaStack_Importer.Importer
                     Media media = unitOfWork.Media.Get(media => media.Path == e.FullPath).FirstOrDefault();
                     if (media != null)
                     {
-                        this.controller.DisableMedia(media, unitOfWork);
-                        unitOfWork.Save();
+                        lock (controllerLock)
+                        {
+                            this.controller.DisableMedia(media, unitOfWork);
+                            this.controller.Save(unitOfWork);
+                        } 
                     }
                     else
                     {
-                        foreach (Media m in unitOfWork.Media.Get(media => media.Path.ToLower().StartsWith(e.FullPath.ToLower())))
+                        lock (controllerLock)
                         {
-                            this.controller.DisableMedia(m, unitOfWork);
+                            foreach (Media m in unitOfWork.Media.Get(media => media.Path.ToLower().StartsWith(e.FullPath.ToLower())))
+                            {
+                                this.controller.DisableMedia(m, unitOfWork);
+                            }
+                            this.controller.Save(unitOfWork);
                         }
-                        unitOfWork.Save();
                     }
                 }
             });
@@ -142,7 +157,7 @@ namespace MediaStack_Importer.Importer
         {
             Task.Run(() =>
             {
-                if (Directory.Exists(e.FullPath) || ignoreExtensionList.Contains(Path.GetExtension(e.FullPath)))
+                if (ignoreExtensionList.Contains(Path.GetExtension(e.FullPath)))
                 {
                     return;
                 }
@@ -154,12 +169,10 @@ namespace MediaStack_Importer.Importer
                 {
                     if (File.Exists(e.FullPath))
                     {
-                        Media media = unitOfWork.Media.Get().Where(media => media.Path == e.OldFullPath).FirstOrDefault();
-                        if (media != null)
+                        lock (controllerLock)
                         {
-                            media.Path = e.FullPath;
-                            unitOfWork.Media.Update(media);
-                            unitOfWork.Save();
+                            this.controller.CreateOrUpdateMediaFromFile(e.FullPath, unitOfWork);
+                            this.controller.Save(unitOfWork);
                         }
                     }
                     else if (Directory.Exists(e.FullPath))
@@ -167,13 +180,41 @@ namespace MediaStack_Importer.Importer
                         string newPath = e.OldFullPath.Last() == Path.DirectorySeparatorChar ? e.OldFullPath + "media" : e.OldFullPath + Path.DirectorySeparatorChar + "media";
                         string oldPath = e.FullPath.Last() == Path.DirectorySeparatorChar ? e.FullPath + "media" : e.FullPath + Path.DirectorySeparatorChar + "media";
 
-                        List<Task> tasks = new List<Task>();
-                        foreach (string filePath in Directory.GetFiles(newPath, "*", SearchOption.AllDirectories))
+                        var filePaths = Directory.GetFiles(MediaFSController.MEDIA_DIRECTORY, "*", SearchOption.AllDirectories);
+
+                        int counter = 0;
+                        object counterLock = new object();
+
+                        lock (controllerLock)
                         {
-                            tasks.Add(Task.Factory.StartNew(() => this.controller.CreateOrUpdateMediaFromFile(filePath, unitOfWork)));
+                            using (ManualResetEvent resetEvent = new ManualResetEvent(false))
+                            {
+                                foreach (string filePath in filePaths)
+                                {
+                                    ThreadPool.QueueUserWorkItem(callBack =>
+                                    {
+                                        try
+                                        {
+                                            this.controller.CreateOrUpdateMediaFromFile(filePath, unitOfWork);
+                                        }
+                                        catch (Exception) { }
+                                        finally
+                                        {
+                                            lock (counterLock)
+                                            {
+                                                counter++;
+                                                if (counter == filePaths.Length)
+                                                {
+                                                    resetEvent.Set();
+                                                }
+                                            }
+                                        }
+                                    });
+                                }
+                                resetEvent.WaitOne();
+                            }
+                            this.controller.Save(unitOfWork);
                         }
-                        Task.WaitAll(tasks.ToArray());
-                        unitOfWork.Save();
                     }
                 }
             });
