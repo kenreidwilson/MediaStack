@@ -1,4 +1,6 @@
-﻿namespace MediaStack_Library.Model
+﻿using System.Collections.Generic;
+
+namespace MediaStack_Library.Model
 {
     public class Album
     {
@@ -9,5 +11,7 @@
         public int ArtistID { get; set; }
 
         public Artist Artist { get; set; }
+
+        public ICollection<Media> Media { get; set; } = new HashSet<Media>();
     }
 }

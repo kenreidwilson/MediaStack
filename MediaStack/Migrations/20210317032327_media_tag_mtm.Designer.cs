@@ -3,14 +3,16 @@ using System;
 using MediaStack_Library.Data_Access_Layer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace MediaStack_Library.Migrations
 {
     [DbContext(typeof(MediaStackContext))]
-    partial class MediaStackContextModelSnapshot : ModelSnapshot
+    [Migration("20210317032327_media_tag_mtm")]
+    partial class media_tag_mtm
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -170,15 +172,15 @@ namespace MediaStack_Library.Migrations
             modelBuilder.Entity("MediaStack_Library.Model.Media", b =>
                 {
                     b.HasOne("MediaStack_Library.Model.Album", "Album")
-                        .WithMany("Media")
+                        .WithMany()
                         .HasForeignKey("AlbumID");
 
                     b.HasOne("MediaStack_Library.Model.Artist", "Artist")
-                        .WithMany("Media")
+                        .WithMany()
                         .HasForeignKey("ArtistID");
 
                     b.HasOne("MediaStack_Library.Model.Category", "Category")
-                        .WithMany("Media")
+                        .WithMany()
                         .HasForeignKey("CategoryID");
 
                     b.Navigation("Album");
@@ -201,21 +203,6 @@ namespace MediaStack_Library.Migrations
                         .HasForeignKey("TagsID")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-                });
-
-            modelBuilder.Entity("MediaStack_Library.Model.Album", b =>
-                {
-                    b.Navigation("Media");
-                });
-
-            modelBuilder.Entity("MediaStack_Library.Model.Artist", b =>
-                {
-                    b.Navigation("Media");
-                });
-
-            modelBuilder.Entity("MediaStack_Library.Model.Category", b =>
-                {
-                    b.Navigation("Media");
                 });
 #pragma warning restore 612, 618
         }

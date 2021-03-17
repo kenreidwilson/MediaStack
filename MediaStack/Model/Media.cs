@@ -19,7 +19,7 @@ namespace MediaStack_Library.Model
 
         public Album Album { get; set; }
 
-        public List<Tag> Tags { get; set; }
+        public ICollection<Tag> Tags { get; set; } = new HashSet<Tag>();
 
         public string Hash { get; set; }
 
@@ -28,5 +28,9 @@ namespace MediaStack_Library.Model
         public MediaType? Type { get; set; }
 
         public DateTime Created { get; set; } = DateTime.Now;
+
+        public int Score { get; set; } = 0;
+
+        public string Source { get; set; }
     }
 }

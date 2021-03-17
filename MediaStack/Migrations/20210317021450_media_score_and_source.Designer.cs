@@ -3,14 +3,16 @@ using System;
 using MediaStack_Library.Data_Access_Layer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace MediaStack_Library.Migrations
 {
     [DbContext(typeof(MediaStackContext))]
-    partial class MediaStackContextModelSnapshot : ModelSnapshot
+    [Migration("20210317021450_media_score_and_source")]
+    partial class media_score_and_source
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -129,31 +131,21 @@ namespace MediaStack_Library.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
+                    b.Property<int?>("MediaID")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.HasKey("ID");
 
+                    b.HasIndex("MediaID");
+
                     b.HasIndex("Name")
                         .IsUnique();
 
                     b.ToTable("Tags");
-                });
-
-            modelBuilder.Entity("MediaTag", b =>
-                {
-                    b.Property<int>("MediaID")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("TagsID")
-                        .HasColumnType("INTEGER");
-
-                    b.HasKey("MediaID", "TagsID");
-
-                    b.HasIndex("TagsID");
-
-                    b.ToTable("MediaTag");
                 });
 
             modelBuilder.Entity("MediaStack_Library.Model.Album", b =>
@@ -170,15 +162,15 @@ namespace MediaStack_Library.Migrations
             modelBuilder.Entity("MediaStack_Library.Model.Media", b =>
                 {
                     b.HasOne("MediaStack_Library.Model.Album", "Album")
-                        .WithMany("Media")
+                        .WithMany()
                         .HasForeignKey("AlbumID");
 
                     b.HasOne("MediaStack_Library.Model.Artist", "Artist")
-                        .WithMany("Media")
+                        .WithMany()
                         .HasForeignKey("ArtistID");
 
                     b.HasOne("MediaStack_Library.Model.Category", "Category")
-                        .WithMany("Media")
+                        .WithMany()
                         .HasForeignKey("CategoryID");
 
                     b.Navigation("Album");
@@ -188,34 +180,16 @@ namespace MediaStack_Library.Migrations
                     b.Navigation("Category");
                 });
 
-            modelBuilder.Entity("MediaTag", b =>
+            modelBuilder.Entity("MediaStack_Library.Model.Tag", b =>
                 {
                     b.HasOne("MediaStack_Library.Model.Media", null)
-                        .WithMany()
-                        .HasForeignKey("MediaID")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("MediaStack_Library.Model.Tag", null)
-                        .WithMany()
-                        .HasForeignKey("TagsID")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .WithMany("Tags")
+                        .HasForeignKey("MediaID");
                 });
 
-            modelBuilder.Entity("MediaStack_Library.Model.Album", b =>
+            modelBuilder.Entity("MediaStack_Library.Model.Media", b =>
                 {
-                    b.Navigation("Media");
-                });
-
-            modelBuilder.Entity("MediaStack_Library.Model.Artist", b =>
-                {
-                    b.Navigation("Media");
-                });
-
-            modelBuilder.Entity("MediaStack_Library.Model.Category", b =>
-                {
-                    b.Navigation("Media");
+                    b.Navigation("Tags");
                 });
 #pragma warning restore 612, 618
         }
