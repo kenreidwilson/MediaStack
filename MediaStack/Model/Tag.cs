@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 namespace MediaStack_Library.Model
 {
@@ -9,6 +10,7 @@ namespace MediaStack_Library.Model
 
         public string Name { get; set; }
 
+        [JsonIgnore]
         public virtual ICollection<Media> Media { get; set; } = new HashSet<Media>();
     }
 }

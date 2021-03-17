@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 namespace MediaStack_Library.Model
 {
@@ -9,20 +10,24 @@ namespace MediaStack_Library.Model
 
         public int? CategoryID { get; set; }
 
+        [JsonIgnore]
         public Category Category { get; set; }
 
         public int? ArtistID { get; set; }
 
+        [JsonIgnore]
         public Artist Artist { get; set; }
 
         public int? AlbumID { get; set; }
 
+        [JsonIgnore]
         public Album Album { get; set; }
 
         public ICollection<Tag> Tags { get; set; } = new HashSet<Tag>();
 
         public string Hash { get; set; }
 
+        [JsonIgnore]
         public string Path { get; set; }
 
         public MediaType? Type { get; set; }
