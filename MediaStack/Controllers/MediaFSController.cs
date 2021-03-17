@@ -17,6 +17,14 @@ namespace MediaStack_Library.Controllers
 
         private readonly object unitOfWorkLock = new object();
 
+        public MediaFSController()
+        {
+            if (MEDIA_DIRECTORY[0] != Path.DirectorySeparatorChar)
+            {
+                MEDIA_DIRECTORY += Path.DirectorySeparatorChar;
+            }
+        }
+
         /// <summary>
         ///     Uses provided filePath to initialize a uniquely hashed media:
         ///         Hash the file.
@@ -29,6 +37,16 @@ namespace MediaStack_Library.Controllers
         /// <returns>Media or null.</returns>
         public Media CreateOrUpdateMediaFromFile(string filePath, IUnitOfWork unitOfWork)
         {
+            string relativePath = null;
+            if (Path.IsPathFullyQualified(filePath))
+            {
+                relativePath = filePath.Replace(MEDIA_DIRECTORY, "");
+            }
+            else
+            {
+                relativePath = filePath;
+            }
+
             Media media = null;
             using (var stream = File.OpenRead(filePath))
             {
@@ -47,7 +65,7 @@ namespace MediaStack_Library.Controllers
                         return null;
                     }
 
-                    media = new Media { Path = filePath, Hash = hash, Type = type };
+                    media = new Media { Path = relativePath, Hash = hash, Type = type };
                     lock (unitOfWorkLock)
                     {
                         if (unitOfWork.Media.GetLocal().Where(media => media.Hash == hash).FirstOrDefault() != null)
@@ -57,13 +75,13 @@ namespace MediaStack_Library.Controllers
                         unitOfWork.Media.Insert(media);
                     }
                 }
-                else if (filePath.Equals(media.Path))
+                else if (relativePath.Equals(media.Path))
                 {
                     return media;
                 }
                 else
                 {
-                    if (File.Exists(media.Path))
+                    if (File.Exists(GetMediaFullPath(media)))
                     {
                         lock (unitOfWorkLock)
                         {
@@ -76,7 +94,7 @@ namespace MediaStack_Library.Controllers
                             }
                         }
                     }
-                    media.Path = filePath;
+                    media.Path = relativePath;
                 }
             }
 
@@ -160,13 +178,22 @@ namespace MediaStack_Library.Controllers
             return;  
         }
 
+        public static string GetMediaFullPath(Media media)
+        {
+            if (media != null && media.Path != null && Path.IsPathFullyQualified(media.Path))
+            {
+                return media.Path;
+            }
+            return $@"{MEDIA_DIRECTORY}{media.Path}";
+        }
+
         /// <summary>
         ///     Determines where the Media should be stored on disk
         ///     based on its Category, Aritst, and Album.
         /// </summary>
         /// <param name="media"></param>
         /// <returns></returns>
-        public static string GetMediaFilePath(Media media)
+        private string DetermineMediaFilePath(Media media)
         {
             return $@"{MEDIA_DIRECTORY}{media.Category.Name}{media.Artist.Name}{media.Album.Name}";
         }

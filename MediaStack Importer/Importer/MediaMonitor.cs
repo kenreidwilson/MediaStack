@@ -129,7 +129,8 @@ namespace MediaStack_Importer.Importer
                 Console.WriteLine($"Deleted: {e.FullPath}");
                 using (var unitOfWork = new UnitOfWork<MediaStackContext>())
                 {
-                    Media media = unitOfWork.Media.Get(media => media.Path == e.FullPath).FirstOrDefault();
+                    string mediaPath = e.FullPath.Replace(MediaFSController.MEDIA_DIRECTORY, "");
+                    Media media = unitOfWork.Media.Get(media => media.Path == mediaPath).FirstOrDefault();
                     if (media != null)
                     {
                         lock (controllerLock)
@@ -142,7 +143,7 @@ namespace MediaStack_Importer.Importer
                     {
                         lock (controllerLock)
                         {
-                            foreach (Media m in unitOfWork.Media.Get(media => media.Path.ToLower().StartsWith(e.FullPath.ToLower())))
+                            foreach (Media m in unitOfWork.Media.Get(media => media.Path.ToLower().StartsWith(mediaPath.ToLower())))
                             {
                                 this.controller.DisableMedia(m, unitOfWork);
                             }

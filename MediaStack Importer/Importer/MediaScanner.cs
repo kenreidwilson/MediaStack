@@ -89,13 +89,13 @@ namespace MediaStack_Importer.Importer
                         {
                             try
                             {
-                                if (!File.Exists(media.Path))
+                                if (!File.Exists(MediaFSController.GetMediaFullPath(media)))
                                 {
                                     this.controller.DisableMedia(media, unitOfWork);
                                 }
                                 else
                                 {
-                                    this.controller.CreateOrUpdateMediaFromFile(media.Path, unitOfWork);
+                                    this.controller.CreateOrUpdateMediaFromFile(MediaFSController.GetMediaFullPath(media), unitOfWork);
                                 }
                             }
                             catch (Exception) { }
