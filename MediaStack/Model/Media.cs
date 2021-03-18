@@ -25,6 +25,7 @@ namespace MediaStack_Library.Model
 
         public ICollection<Tag> Tags { get; set; } = new HashSet<Tag>();
 
+        [JsonIgnore]
         public string Hash { get; set; }
 
         [JsonIgnore]

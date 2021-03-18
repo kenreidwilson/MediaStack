@@ -1,23 +1,20 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using MediaStack_Library.Data_Access_Layer;
+using MediaStack_Library.Model;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using MediaStack_Library.Data_Access_Layer;
-using MediaStack_Library.Model;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace MediaStack_API.Controllers
 {
     [Route("/[controller]")]
-    public class AlbumsController : Controller
+    public class TagsController : Controller
     {
-        [HttpGet]
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> IndexAsync()
         {
             using (var unitOfWork = new UnitOfWork<MediaStackContext>())
             {
-                return Ok(await unitOfWork.Albums.Get().ToListAsync());
+                return Ok(await unitOfWork.Tags.Get().ToListAsync());
             }
         }
 
@@ -26,15 +23,15 @@ namespace MediaStack_API.Controllers
         {
             using (var unitOfWork = new UnitOfWork<MediaStackContext>())
             {
-                Album album = unitOfWork.Albums.Get()
-                    .Where(album => album.ID == id)
+                Tag tag = unitOfWork.Tags.Get()
+                    .Where(tag => tag.ID == id)
                     .FirstOrDefault();
 
-                if (album == null)
+                if (tag == null)
                 {
                     return NotFound();
                 }
-                return Ok(album);
+                return Ok(tag);
             }
         }
     }
