@@ -1,28 +1,43 @@
-﻿using MediaStack_Library.Controllers;
-using MediaStack_Library.Data_Access_Layer;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
+using MediaStack_Importer.Services.MonitorService;
+using MediaStack_Importer.Services.ScannerService;
+using MediaStack_Library.Controllers;
+using MediaStack_Library.Services.UnitOfWorkService;
 
 namespace MediaStack_Importer.Importer
 {
     public class MediaImporter
     {
-        protected IUnitOfWork unitOfWork;
-        protected MediaFSController controller;
+        #region Data members
+
+        protected IUnitOfWorkService UnitOfWorkService;
+        protected IMediaFileSystemController FSController;
 
         protected MediaScanner scanner;
         protected MediaMonitor monitor;
 
-        public MediaImporter()
+        #endregion
+
+        #region Constructors
+
+        public MediaImporter(IMediaFileSystemController fsController, IUnitOfWorkService unitOfWorkService)
         {
-            this.controller = new MediaFSController();
-            this.scanner = new MediaScanner(this.controller);
-            this.monitor = new MediaMonitor(this.controller);
+            this.FSController = fsController;
+            this.UnitOfWorkService = unitOfWorkService;
+            this.scanner = new MediaScanner(this.FSController, this.UnitOfWorkService);
+            this.monitor = new MediaMonitor(this.FSController, this.UnitOfWorkService);
         }
+
+        #endregion
+
+        #region Methods
 
         public async Task Start()
         {
             this.scanner.Start();
             await this.monitor.Start();
         }
+
+        #endregion
     }
 }

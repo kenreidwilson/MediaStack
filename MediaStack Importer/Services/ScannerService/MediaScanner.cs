@@ -1,28 +1,40 @@
-﻿using MediaStack_Library.Controllers;
-using MediaStack_Library.Data_Access_Layer;
-using MediaStack_Library.Model;
-using System;
-using System.Collections.Generic;
+﻿using System;
 using System.IO;
 using System.Linq;
 using System.Threading;
+using MediaStack_Library.Controllers;
+using MediaStack_Library.Data_Access_Layer;
+using MediaStack_Library.Services.UnitOfWorkService;
 
-namespace MediaStack_Importer.Importer
+namespace MediaStack_Importer.Services.ScannerService
 {
     /// <summary>
     ///     Ensures that the data persisted is
     ///     up-to-date with what is on disk.
     /// </summary>
-    public class MediaScanner
+    public class MediaScanner : BaseImporterService
     {
-        protected MediaFSController controller;
+        #region Data members
 
         private const int BATCH_SIZE = 100;
+        protected IMediaFileSystemController FSController;
 
-        public MediaScanner(MediaFSController controller)
+        protected IUnitOfWorkService UnitOfWorkService;
+
+        #endregion
+
+        #region Constructors
+
+        public MediaScanner(IMediaFileSystemController fsController, IUnitOfWorkService unitOfWorkService) : base(
+            fsController)
         {
-            this.controller = controller;
+            this.FSController = fsController;
+            this.UnitOfWorkService = unitOfWorkService;
         }
+
+        #endregion
+
+        #region Methods
 
         public void Start()
         {
@@ -35,22 +47,25 @@ namespace MediaStack_Importer.Importer
 
         private void searchForNewMedia()
         {
-            using (ManualResetEvent resetEvent = new ManualResetEvent(false))
+            using (var resetEvent = new ManualResetEvent(false))
             {
-                using (var unitOfWork = new UnitOfWork<MediaStackContext>())
+                using (var unitOfWork = this.UnitOfWorkService.Create())
                 {
-                    var filePaths = Directory.GetFiles(MediaFSController.MEDIA_DIRECTORY, "*", SearchOption.AllDirectories);
-                    int counter = 0;
-                    object counterLock = new object();
-                    foreach (string filePath in filePaths)
+                    var filePaths = Directory.GetFiles(this.FSController.MediaDirectory, "*",
+                        SearchOption.AllDirectories);
+                    var counter = 0;
+                    var counterLock = new object();
+                    foreach (var filePath in filePaths)
                     {
                         ThreadPool.QueueUserWorkItem(callBack =>
                         {
                             try
                             {
-                                this.controller.CreateOrUpdateMediaFromFile(filePath, unitOfWork);
+                                CreateOrUpdateMediaFromFile(filePath, unitOfWork, counterLock);
                             }
-                            catch (Exception) { } 
+                            catch (Exception)
+                            {
+                            }
                             finally
                             {
                                 lock (counterLock)
@@ -58,8 +73,9 @@ namespace MediaStack_Importer.Importer
                                     counter++;
                                     if (counter % BATCH_SIZE == 0)
                                     {
-                                        this.controller.Save(unitOfWork);
+                                        unitOfWork.Save();
                                     }
+
                                     if (counter == filePaths.Length)
                                     {
                                         resetEvent.Set();
@@ -68,37 +84,41 @@ namespace MediaStack_Importer.Importer
                             }
                         });
                     }
+
                     resetEvent.WaitOne();
-                    this.controller.Save(unitOfWork);
+                    unitOfWork.Save();
                 }
             }
         }
 
         private void verifyAllMedia()
         {
-            using (ManualResetEvent resetEvent = new ManualResetEvent(false))
+            using (var resetEvent = new ManualResetEvent(false))
             {
-                using (var unitOfWork = new UnitOfWork<MediaStackContext>())
+                using (var unitOfWork = this.UnitOfWorkService.Create())
                 {
-                    int counter = 0;
-                    object counterLock = new object();
-                    List<Media> medias = unitOfWork.Media.Get().Where(media => media.Path != null).ToList();
-                    foreach (Media media in medias)
+                    var counter = 0;
+                    var counterLock = new object();
+                    var medias = unitOfWork.Media.Get().Where(media => media.Path != null).ToList();
+                    foreach (var media in medias)
                     {
                         ThreadPool.QueueUserWorkItem(callBack =>
                         {
                             try
                             {
-                                if (!File.Exists(MediaFSController.GetMediaFullPath(media)))
+                                if (!File.Exists(this.FSController.GetMediaFullPath(media)))
                                 {
-                                    this.controller.DisableMedia(media, unitOfWork);
+                                    unitOfWork.DisableMedia(media);
                                 }
                                 else
                                 {
-                                    this.controller.CreateOrUpdateMediaFromFile(MediaFSController.GetMediaFullPath(media), unitOfWork);
+                                    CreateOrUpdateMediaFromFile(this.FSController.GetMediaFullPath(media), unitOfWork,
+                                        counterLock);
                                 }
                             }
-                            catch (Exception) { }
+                            catch (Exception)
+                            {
+                            }
                             finally
                             {
                                 lock (counterLock)
@@ -106,21 +126,24 @@ namespace MediaStack_Importer.Importer
                                     counter++;
                                     if (counter % BATCH_SIZE == 0)
                                     {
-                                        this.controller.Save(unitOfWork);
+                                        unitOfWork.Save();
                                     }
+
                                     if (counter == medias.Count)
                                     {
                                         resetEvent.Set();
                                     }
                                 }
                             }
-
                         });
                     }
+
                     resetEvent.WaitOne();
-                    this.controller.Save(unitOfWork);
+                    unitOfWork.Save();
                 }
             }
         }
+
+        #endregion
     }
 }

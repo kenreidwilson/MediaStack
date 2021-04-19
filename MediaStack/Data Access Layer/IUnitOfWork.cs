@@ -1,8 +1,9 @@
-﻿using MediaStack_Library.Model;
+﻿using System;
+using MediaStack_Library.Model;
 
 namespace MediaStack_Library.Data_Access_Layer
 {
-    public interface IUnitOfWork
+    public interface IUnitOfWork : IDisposable
     {
         IRepository<Media> Media { get; }
 

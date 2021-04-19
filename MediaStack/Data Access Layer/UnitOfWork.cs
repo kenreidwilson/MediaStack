@@ -4,7 +4,7 @@ using System;
 
 namespace MediaStack_Library.Data_Access_Layer
 {
-    public class UnitOfWork : IUnitOfWork, IDisposable
+    public class UnitOfWork : IUnitOfWork
     {
         protected DbContext Context;
 

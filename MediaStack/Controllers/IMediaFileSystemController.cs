@@ -9,6 +9,14 @@ namespace MediaStack_Library.Controllers
     /// </summary>
     public interface IMediaFileSystemController
     {
+        #region Properties
+
+        public string MediaDirectory { get; }
+
+        #endregion
+
+        #region Methods
+
         /// <summary>
         ///     Determines where the Media should exist on disk
         ///     and moves the file there.
@@ -61,5 +69,7 @@ namespace MediaStack_Library.Controllers
         /// <param name="filePath">The file path.</param>
         /// <returns>dynamic.</returns>
         public dynamic DeriveMediaReferences(string filePath);
+
+        #endregion
     }
 }

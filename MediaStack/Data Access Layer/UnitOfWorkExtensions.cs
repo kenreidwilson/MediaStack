@@ -5,6 +5,16 @@ namespace MediaStack_Library.Data_Access_Layer
 {
     public static class UnitOfWorkExtensions
     {
+        public static void DisableMedia(this IUnitOfWork unitOfWork, Media media)
+        {
+            media.Path = null;
+        }
+
+        public static bool IsMediaDisabled(this IUnitOfWork unitOfWor, Media media)
+        {
+            return media.Path == null;
+        }
+
         public static Category FindOrCreateCategory(this IUnitOfWork unitOfWork, string name)
         {
             Category category = unitOfWork.Categories
