@@ -4,9 +4,9 @@ using System;
 
 namespace MediaStack_Library.Data_Access_Layer
 {
-    public class UnitOfWork<T> : IUnitOfWork, IDisposable where T : DbContext
+    public class UnitOfWork : IUnitOfWork, IDisposable
     {
-        private DbContext context;
+        protected DbContext Context;
 
         public IRepository<Media> Media { get; }
 
@@ -18,24 +18,24 @@ namespace MediaStack_Library.Data_Access_Layer
 
         public IRepository<Tag> Tags { get; }
 
-        public UnitOfWork()
+        public UnitOfWork(DbContext context)
         {
-            this.context = (T)Activator.CreateInstance(typeof(T));
-            this.Media = new Repository<Media>(this.context);
-            this.Albums = new Repository<Album>(this.context);
-            this.Artists = new Repository<Artist>(this.context);
-            this.Categories = new Repository<Category>(this.context);
-            this.Tags = new Repository<Tag>(this.context);
+            this.Context = context;
+            this.Media = new Repository<Media>(this.Context);
+            this.Albums = new Repository<Album>(this.Context);
+            this.Artists = new Repository<Artist>(this.Context);
+            this.Categories = new Repository<Category>(this.Context);
+            this.Tags = new Repository<Tag>(this.Context);
         }
 
         public void Save()
         {
-            this.context.SaveChanges();
+            this.Context.SaveChanges();
         }
 
         public void Dispose()
         {
-            this.context.Dispose();
+            this.Context.Dispose();
         }
     }
 }
