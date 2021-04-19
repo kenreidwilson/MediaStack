@@ -1,21 +1,26 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using MediaStack_Library.Data_Access_Layer;
 using MediaStack_Library.Model;
+using MediaStack_Library.Services.UnitOfWorkService;
 
 namespace MediaStack_API.Controllers
 {
     [Route("/[controller]")]
     public class AlbumsController : Controller
     {
+        protected IUnitOfWorkService UnitOfWorkService { get; }
+
+        public AlbumsController(IUnitOfWorkService unitOfWorkService)
+        {
+            this.UnitOfWorkService = unitOfWorkService;
+        }
+
         [HttpGet]
         public async Task<IActionResult> Index()
         {
-            using (var unitOfWork = new UnitOfWork<MediaStackContext>())
+            using (var unitOfWork = this.UnitOfWorkService.Create())
             {
                 return Ok(await unitOfWork.Albums.Get().ToListAsync());
             }
@@ -24,11 +29,11 @@ namespace MediaStack_API.Controllers
         [HttpGet("{id}")]
         public async Task<IActionResult> Details(int id)
         {
-            using (var unitOfWork = new UnitOfWork<MediaStackContext>())
+            using (var unitOfWork = this.UnitOfWorkService.Create())
             {
-                Album album = unitOfWork.Albums.Get()
-                    .Where(album => album.ID == id)
-                    .FirstOrDefault();
+                Album album = unitOfWork.Albums
+                                        .Get()
+                                        .FirstOrDefault(a => a.ID == id);
 
                 if (album == null)
                 {

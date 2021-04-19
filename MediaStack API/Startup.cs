@@ -10,8 +10,10 @@ using Microsoft.OpenApi.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text.Json.Serialization;
-using System.Threading.Tasks;
+using MediaStack_Library.Controllers;
+using MediaStack_Library.Data_Access_Layer;
+using MediaStack_Library.Services.UnitOfWorkService;
+using Microsoft.EntityFrameworkCore;
 
 namespace MediaStack_API
 {
@@ -28,6 +30,10 @@ namespace MediaStack_API
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddControllers();
+
+            services.AddTransient<DbContext, MediaStackContext>();
+            services.AddTransient<IUnitOfWorkService, UnitOfWorkService>();
+            services.AddSingleton<IMediaFileSystemController, MediaFSController>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

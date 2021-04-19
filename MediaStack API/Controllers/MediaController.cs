@@ -1,17 +1,24 @@
-﻿using MediaStack_Library.Data_Access_Layer;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Linq;
 using System.Threading.Tasks;
+using MediaStack_Library.Services.UnitOfWorkService;
 
 namespace MediaStack_API.Controllers
 {
     [Route("/[controller]")]
     public class MediaController : Controller
     {
+        protected IUnitOfWorkService UnitOfWorkService { get; }
+
+        public MediaController(IUnitOfWorkService unitOfWorkService)
+        {
+            this.UnitOfWorkService = unitOfWorkService;
+        }
+
         public async Task<IActionResult> IndexAsync()
         {
-            using (var unitOfWork = new UnitOfWork<MediaStackContext>())
+            using (var unitOfWork = this.UnitOfWorkService.Create())
             {
                 return Ok(await unitOfWork.Media.Get()
                     .Where(media => media.Path != null)
