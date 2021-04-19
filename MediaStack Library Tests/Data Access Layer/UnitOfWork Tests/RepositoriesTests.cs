@@ -17,7 +17,7 @@ namespace MediaStack_Library_Tests.Data_Access_Layer.UnitOfWork_Tests
 
         public RepositoriesTests()
         {
-            this.unitOfWork = new UnitOfWork<MockMediaStackContext>();
+            this.unitOfWork = new UnitOfWork(new MockMediaStackContext());
         }
 
         #endregion

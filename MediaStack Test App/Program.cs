@@ -10,6 +10,7 @@ using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
+using MediaStack_Library.Services.UnitOfWorkService;
 
 namespace MediaStack_Test_App
 {
@@ -19,7 +20,7 @@ namespace MediaStack_Test_App
         {
             new MediaStackContext();
             EnvParser.ParseEnvFromFile($@"{Environment.CurrentDirectory}{Path.DirectorySeparatorChar}.env");
-            MediaImporter i = new MediaImporter();
+            MediaImporter i = new MediaImporter(new MediaFSController(), new UnitOfWorkService());
             await i.Start();
 
             /*
