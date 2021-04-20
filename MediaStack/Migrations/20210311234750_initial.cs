@@ -1,7 +1,7 @@
 ﻿using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
-namespace MediaStack_Library.Migrations
+namespace MediaStackCore.Migrations
 {
     public partial class initial : Migration
     {

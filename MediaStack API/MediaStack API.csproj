@@ -20,7 +20,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\MediaStack\MediaStack Library.csproj" />
+    <ProjectReference Include="..\MediaStack\MediaStack Core.csproj" />
+    <ProjectReference Include="..\MediaStack\MediaStackCore.csproj" />
   </ItemGroup>
 
   <ItemGroup>

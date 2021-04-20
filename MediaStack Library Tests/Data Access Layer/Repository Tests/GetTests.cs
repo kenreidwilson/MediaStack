@@ -1,7 +1,7 @@
-﻿using MediaStack_Library.Data_Access_Layer;
-using MediaStack_Library.Model;
-using MediaStack_Testing_Library.Mocks;
+﻿using MediaStack_Testing_Library.Mocks;
 using System.Linq;
+using MediaStackCore.Data_Access_Layer;
+using MediaStackCore.Models;
 using Xunit;
 
 namespace MediaStack_Library_Tests.Data_Access_Layer.Repository_Tests

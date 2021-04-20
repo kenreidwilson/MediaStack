@@ -10,9 +10,9 @@ using Microsoft.OpenApi.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using MediaStack_Library.Controllers;
-using MediaStack_Library.Data_Access_Layer;
-using MediaStack_Library.Services.UnitOfWorkService;
+using MediaStackCore.Controllers;
+using MediaStackCore.Data_Access_Layer;
+using MediaStackCore.Services.UnitOfWorkService;
 using Microsoft.EntityFrameworkCore;
 
 namespace MediaStack_API

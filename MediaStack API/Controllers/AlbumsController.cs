@@ -2,8 +2,8 @@
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using MediaStack_Library.Model;
-using MediaStack_Library.Services.UnitOfWorkService;
+using MediaStackCore.Models;
+using MediaStackCore.Services.UnitOfWorkService;
 
 namespace MediaStack_API.Controllers
 {

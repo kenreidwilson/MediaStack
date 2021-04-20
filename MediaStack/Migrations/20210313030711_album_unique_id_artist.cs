@@ -1,6 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore.Migrations;
 
-namespace MediaStack_Library.Migrations
+namespace MediaStackCore.Migrations
 {
     public partial class album_unique_id_artist : Migration
     {

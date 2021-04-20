@@ -1,8 +1,7 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
-namespace MediaStack_Library.Model
+namespace MediaStackCore.Models
 {
     public class Tag
     {

@@ -1,5 +1,5 @@
-﻿using MediaStack_Library.Model;
-using MediaStack_Testing_Library.Mocks;
+﻿using MediaStack_Testing_Library.Mocks;
+using MediaStackCore.Models;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
 

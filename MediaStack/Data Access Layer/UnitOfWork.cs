@@ -1,8 +1,7 @@
-﻿using MediaStack_Library.Model;
+﻿using MediaStackCore.Models;
 using Microsoft.EntityFrameworkCore;
-using System;
 
-namespace MediaStack_Library.Data_Access_Layer
+namespace MediaStackCore.Data_Access_Layer
 {
     public class UnitOfWork : IUnitOfWork
     {

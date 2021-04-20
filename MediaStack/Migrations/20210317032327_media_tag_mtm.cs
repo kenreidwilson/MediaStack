@@ -1,6 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore.Migrations;
 
-namespace MediaStack_Library.Migrations
+namespace MediaStackCore.Migrations
 {
     public partial class media_tag_mtm : Migration
     {

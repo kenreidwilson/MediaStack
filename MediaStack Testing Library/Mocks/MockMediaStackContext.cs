@@ -1,4 +1,4 @@
-﻿using MediaStack_Library.Data_Access_Layer;
+﻿using MediaStackCore.Data_Access_Layer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 

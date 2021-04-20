@@ -3,10 +3,10 @@ using System.Dynamic;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
-using MediaStack_Library.Model;
+using MediaStackCore.Models;
 using MimeDetective.Extensions;
 
-namespace MediaStack_Library.Controllers
+namespace MediaStackCore.Controllers
 {
     public class MediaFSController : IMediaFileSystemController
     {

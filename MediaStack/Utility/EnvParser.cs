@@ -1,7 +1,7 @@
 ﻿using System;
 using System.IO;
 
-namespace MediaStack_Library.Utility
+namespace MediaStackCore.Utility
 {
     public class EnvParser
     {

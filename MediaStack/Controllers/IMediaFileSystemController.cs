@@ -1,7 +1,7 @@
 ﻿using System.IO;
-using MediaStack_Library.Model;
+using MediaStackCore.Models;
 
-namespace MediaStack_Library.Controllers
+namespace MediaStackCore.Controllers
 {
     /// <summary>
     ///     Defines functionality for a MediaFileSystemController.

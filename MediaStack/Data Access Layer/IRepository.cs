@@ -2,7 +2,7 @@
 using System.Linq;
 using System.Linq.Expressions;
 
-namespace MediaStack_Library.Data_Access_Layer
+namespace MediaStackCore.Data_Access_Layer
 {
     public interface IRepository<T> where T : class
     {

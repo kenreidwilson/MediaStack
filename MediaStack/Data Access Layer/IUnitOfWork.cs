@@ -1,7 +1,7 @@
 ﻿using System;
-using MediaStack_Library.Model;
+using MediaStackCore.Models;
 
-namespace MediaStack_Library.Data_Access_Layer
+namespace MediaStackCore.Data_Access_Layer
 {
     public interface IUnitOfWork : IDisposable
     {
