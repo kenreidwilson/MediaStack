@@ -10,8 +10,12 @@ using Microsoft.OpenApi.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using AutoMapper;
+using MediaStack_API.Infrastructure;
+using MediaStack_API.Models;
 using MediaStackCore.Controllers;
 using MediaStackCore.Data_Access_Layer;
+using MediaStackCore.Models;
 using MediaStackCore.Services.UnitOfWorkService;
 using Microsoft.EntityFrameworkCore;
 
@@ -34,6 +38,8 @@ namespace MediaStack_API
             services.AddTransient<DbContext, MediaStackContext>();
             services.AddTransient<IUnitOfWorkService, UnitOfWorkService>();
             services.AddSingleton<IMediaFileSystemController, MediaFSController>();
+
+            services.AddAutoMapper(typeof(DefaultAutoMapperProfile));
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

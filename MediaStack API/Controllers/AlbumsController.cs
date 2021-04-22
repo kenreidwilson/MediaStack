@@ -1,5 +1,8 @@
-﻿using System.Linq;
+﻿using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
+using AutoMapper;
+using MediaStack_API.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using MediaStackCore.Models;
@@ -12,9 +15,12 @@ namespace MediaStack_API.Controllers
     {
         protected IUnitOfWorkService UnitOfWorkService { get; }
 
-        public AlbumsController(IUnitOfWorkService unitOfWorkService)
+        protected IMapper Mapper { get; }
+
+        public AlbumsController(IUnitOfWorkService unitOfWorkService, IMapper mapper)
         {
             this.UnitOfWorkService = unitOfWorkService;
+            this.Mapper = mapper;
         }
 
         [HttpGet]
@@ -22,7 +28,7 @@ namespace MediaStack_API.Controllers
         {
             using (var unitOfWork = this.UnitOfWorkService.Create())
             {
-                return Ok(await unitOfWork.Albums.Get().ToListAsync());
+                return Ok(await unitOfWork.Albums.Get().Select(a => this.Mapper.Map<AlbumDto>(a)).ToListAsync());
             }
         }
 
@@ -39,7 +45,24 @@ namespace MediaStack_API.Controllers
                 {
                     return NotFound();
                 }
-                return Ok(album);
+
+                return Ok(this.Mapper.Map<AlbumDto>(album));
+            }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Index([FromBody] Album album)
+        {
+            using (var unitOfWork = this.UnitOfWorkService.Create())
+            {
+                if (unitOfWork.Albums.Get().Any(a => a.ArtistID == album.ArtistID && a.Name == album.Name))
+                {
+                    return BadRequest("Duplicate.");
+                }
+                unitOfWork.Albums.Insert(album);
+                unitOfWork.Save();
+                unitOfWork.Albums.Get(a => a.ArtistID == album.ArtistID && a.Name == album.Name).First();
+                return Ok(this.Mapper.Map<AlbumDto>(album));
             }
         }
     }
