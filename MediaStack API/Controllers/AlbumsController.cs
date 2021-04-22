@@ -1,27 +1,37 @@
-﻿using System.IO;
-using System.Linq;
+﻿using System.Linq;
 using System.Threading.Tasks;
 using AutoMapper;
 using MediaStack_API.Models;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+using MediaStack_API.Responses;
 using MediaStackCore.Models;
 using MediaStackCore.Services.UnitOfWorkService;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace MediaStack_API.Controllers
 {
     [Route("/[controller]")]
     public class AlbumsController : Controller
     {
+        #region Properties
+
         protected IUnitOfWorkService UnitOfWorkService { get; }
 
         protected IMapper Mapper { get; }
+
+        #endregion
+
+        #region Constructors
 
         public AlbumsController(IUnitOfWorkService unitOfWorkService, IMapper mapper)
         {
             this.UnitOfWorkService = unitOfWorkService;
             this.Mapper = mapper;
         }
+
+        #endregion
+
+        #region Methods
 
         [HttpGet]
         public async Task<IActionResult> Index()
@@ -33,13 +43,13 @@ namespace MediaStack_API.Controllers
         }
 
         [HttpGet("{id}")]
-        public async Task<IActionResult> Details(int id)
+        public IActionResult Details(int id)
         {
             using (var unitOfWork = this.UnitOfWorkService.Create())
             {
-                Album album = unitOfWork.Albums
-                                        .Get()
-                                        .FirstOrDefault(a => a.ID == id);
+                var album = unitOfWork.Albums
+                                      .Get()
+                                      .FirstOrDefault(a => a.ID == id);
 
                 if (album == null)
                 {
@@ -51,19 +61,22 @@ namespace MediaStack_API.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Index([FromBody] Album album)
+        public IActionResult Index([FromBody] Album album)
         {
             using (var unitOfWork = this.UnitOfWorkService.Create())
             {
                 if (unitOfWork.Albums.Get().Any(a => a.ArtistID == album.ArtistID && a.Name == album.Name))
                 {
-                    return BadRequest("Duplicate.");
+                    return BadRequest(new ResponseWrapper(null, "Duplicate."));
                 }
+
                 unitOfWork.Albums.Insert(album);
                 unitOfWork.Save();
-                unitOfWork.Albums.Get(a => a.ArtistID == album.ArtistID && a.Name == album.Name).First();
-                return Ok(this.Mapper.Map<AlbumDto>(album));
+                Album createdAlbum = unitOfWork.Albums.Get(a => a.ArtistID == album.ArtistID && a.Name == album.Name).First();
+                return Ok(new ResponseWrapper(this.Mapper.Map<AlbumDto>(createdAlbum)));
             }
         }
+
+        #endregion
     }
 }
