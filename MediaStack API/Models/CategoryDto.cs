@@ -1,11 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-
-namespace MediaStack_API.Models
+﻿namespace MediaStack_API.Models
 {
     public class CategoryDto
     {
+        #region Properties
+
+        public int ID { get; set; }
+        public string Name { get; set; }
+
+        #endregion
     }
 }
