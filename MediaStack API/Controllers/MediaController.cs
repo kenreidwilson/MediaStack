@@ -4,6 +4,7 @@ using AutoMapper;
 using MediaStack_API.Models.Requests;
 using MediaStack_API.Models.Responses;
 using MediaStack_API.Models.ViewModels;
+using MediaStack_API.Services.Thumbnailer;
 using MediaStackCore.Controllers;
 using MediaStackCore.Models;
 using MediaStackCore.Services.UnitOfWorkService;
@@ -23,17 +24,21 @@ namespace MediaStack_API.Controllers
 
         protected IMapper Mapper { get; }
 
+        protected IThumbnailer Thumbnailer { get; }
+
         #endregion
 
         #region Constructors
 
-        public MediaController(IUnitOfWorkService unitOfWorkService, 
-            IMapper mapper, 
-            IMediaFileSystemController fsController)
+        public MediaController(IUnitOfWorkService unitOfWorkService,
+            IMapper mapper,
+            IMediaFileSystemController fsController,
+            IThumbnailer thumbnailer)
         {
             this.UnitOfWorkService = unitOfWorkService;
             this.Mapper = mapper;
             this.FSController = fsController;
+            this.Thumbnailer = thumbnailer;
         }
 
         #endregion
@@ -93,18 +98,54 @@ namespace MediaStack_API.Controllers
 
             using (var unitOfWork = this.UnitOfWorkService.Create())
             {
-                Media media = unitOfWork.Media.Get(m => m.ID == id).FirstOrDefault();
+                var media = unitOfWork.Media.Get(m => m.ID == id).FirstOrDefault();
                 if (media == null)
                 {
                     return NotFound();
                 }
+
                 return File(this.GetMediaImageBytes(media), "image/png");
+            }
+        }
+
+        [HttpGet("{id}/Thumbnail")]
+        public IActionResult Thumbnail(int id)
+        {
+            if (id == 0)
+            {
+                return BadRequest();
+            }
+
+            using (var unitOfWork = this.UnitOfWorkService.Create())
+            {
+                var media = unitOfWork.Media.Get(m => m.ID == id).FirstOrDefault();
+                if (media == null)
+                {
+                    return NotFound();
+                }
+
+                if (this.Thumbnailer.HasThumbnail(media) || this.Thumbnailer.CreateThumbnail(media))
+                {
+                    return File(this.GetMediaThumbnailBytes(media), "image/png");
+                }
+
+                return File(this.GetDefaultThumbnailBytes(), "image/png");
             }
         }
 
         protected byte[] GetMediaImageBytes(Media media)
         {
             return System.IO.File.ReadAllBytes(this.FSController.GetMediaFullPath(media));
+        }
+
+        protected byte[] GetMediaThumbnailBytes(Media media)
+        {
+            return System.IO.File.ReadAllBytes(this.Thumbnailer.GetThumbnailFullPath(media));
+        }
+
+        protected byte[] GetDefaultThumbnailBytes()
+        {
+            return System.IO.File.ReadAllBytes(this.Thumbnailer.GetDefaultThumbnailFullPath());
         }
 
         #endregion

@@ -13,6 +13,7 @@ using System.Linq;
 using AutoMapper;
 using MediaStack_API.Infrastructure;
 using MediaStack_API.Models;
+using MediaStack_API.Services.Thumbnailer;
 using MediaStackCore.Controllers;
 using MediaStackCore.Data_Access_Layer;
 using MediaStackCore.Models;
@@ -38,6 +39,7 @@ namespace MediaStack_API
             services.AddTransient<DbContext, MediaStackContext>();
             services.AddTransient<IUnitOfWorkService, UnitOfWorkService>();
             services.AddSingleton<IMediaFileSystemController, MediaFSController>();
+            services.AddSingleton<IThumbnailer, Thumbnailer>();
 
             services.AddAutoMapper(typeof(DefaultAutoMapperProfile));
         }
