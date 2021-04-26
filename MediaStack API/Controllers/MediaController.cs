@@ -2,6 +2,10 @@
 using Microsoft.EntityFrameworkCore;
 using System.Linq;
 using System.Threading.Tasks;
+using AutoMapper;
+using MediaStack_API.Models;
+using MediaStack_API.Responses;
+using MediaStackCore.Models;
 using MediaStackCore.Services.UnitOfWorkService;
 
 namespace MediaStack_API.Controllers
@@ -11,19 +15,32 @@ namespace MediaStack_API.Controllers
     {
         protected IUnitOfWorkService UnitOfWorkService { get; }
 
-        public MediaController(IUnitOfWorkService unitOfWorkService)
+        protected IMapper Mapper { get; }
+
+        public MediaController(IUnitOfWorkService unitOfWorkService, IMapper mapper)
         {
             this.UnitOfWorkService = unitOfWorkService;
+            this.Mapper = mapper;
         }
 
-        public async Task<IActionResult> IndexAsync()
+        [HttpPost]
+        public async Task<IActionResult> Index([FromBody] MediaSearchQuery searchQuery)
         {
             using (var unitOfWork = this.UnitOfWorkService.Create())
             {
-                return Ok(await unitOfWork.Media.Get()
-                    .Where(media => media.Path != null)
-                    .Include(media => media.Tags)
-                    .ToListAsync());
+                IQueryable<Media> query = searchQuery.GetQuery(unitOfWork);
+                int total = query.Count();
+                var response = new SearchResponse(await query
+                                                        .Skip(searchQuery.Offset)
+                                                        .Take(searchQuery.Count)
+                                                        .Select(m => this.Mapper.Map<MediaViewModel>(m))
+                                                        .ToListAsync()) 
+                {
+                    Offset = searchQuery.Offset,
+                    Count = searchQuery.Count,
+                    Total = total
+                };
+                return Ok(response);
             }
         }
     }

@@ -25,9 +25,4 @@
     <ProjectReference Include="..\MediaStack\MediaStackCore.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Converters\" />
-    <Folder Include="Services\" />
-  </ItemGroup>
-
 </Project>
