@@ -1,7 +1,7 @@
 ﻿using System.Linq;
 using System.Threading.Tasks;
 using AutoMapper;
-using MediaStack_API.Models;
+using MediaStack_API.Models.Requests;
 using MediaStack_API.Models.Responses;
 using MediaStack_API.Models.ViewModels;
 using MediaStackCore.Models;
@@ -80,6 +80,20 @@ namespace MediaStack_API.Controllers
                 }
 
                 return Ok(this.Mapper.Map<AlbumViewModel>(album));
+            }
+        }
+
+        [HttpPost]
+        public IActionResult Sort(AlbumSortRequest request)
+        {
+            using (var unitOfWork = this.UnitOfWorkService.Create())
+            {
+                if (!ModelState.IsValid || !unitOfWork.Albums.Get().Any(a => a.ID == request.AlbumID))
+                {
+                    return BadRequest();
+                }
+
+                return Ok(this.Mapper.Map<AlbumViewModel>(request.SortRequestedAlbum(unitOfWork)));
             }
         }
 
