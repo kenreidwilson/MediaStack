@@ -1,4 +1,4 @@
-﻿namespace MediaStack_API.Models
+﻿namespace MediaStack_API.Models.ViewModels
 {
     public class AlbumViewModel
     {

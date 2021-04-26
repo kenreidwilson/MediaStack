@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using MediaStack_API.Models;
+using MediaStack_API.Models.ViewModels;
 using MediaStackCore.Models;
 
 namespace MediaStack_API.Infrastructure

@@ -2,7 +2,8 @@
 using System.Threading.Tasks;
 using AutoMapper;
 using MediaStack_API.Models;
-using MediaStack_API.Responses;
+using MediaStack_API.Models.Responses;
+using MediaStack_API.Models.ViewModels;
 using MediaStackCore.Models;
 using MediaStackCore.Services.UnitOfWorkService;
 using Microsoft.AspNetCore.Mvc;
@@ -66,13 +67,13 @@ namespace MediaStack_API.Controllers
             {
                 if (unitOfWork.Tags.Get().Any(t => t.Name == tag.Name))
                 {
-                    return BadRequest(new ResponseWrapper(null, "Duplicate."));
+                    return BadRequest(new BaseResponse(null, "Duplicate."));
                 }
 
                 unitOfWork.Tags.Insert(tag);
                 unitOfWork.Save();
                 var createdTag = unitOfWork.Tags.Get(t => t.Name == tag.Name).First();
-                return Ok(new ResponseWrapper(this.Mapper.Map<TagViewModel>(createdTag)));
+                return Ok(new BaseResponse(this.Mapper.Map<TagViewModel>(createdTag)));
             }
         }
 

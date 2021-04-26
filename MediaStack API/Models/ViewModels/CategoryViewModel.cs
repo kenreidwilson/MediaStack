@@ -1,11 +1,10 @@
-﻿namespace MediaStack_API.Models
+﻿namespace MediaStack_API.Models.ViewModels
 {
-    public class ArtistViewModel
+    public class CategoryViewModel
     {
         #region Properties
 
         public int ID { get; set; }
-
         public string Name { get; set; }
 
         #endregion

@@ -1,6 +1,6 @@
-﻿namespace MediaStack_API.Responses
+﻿namespace MediaStack_API.Models.Responses
 {
-    public class ResponseWrapper
+    public class BaseResponse
     {
         #region Properties
 
@@ -12,7 +12,7 @@
 
         #region Constructors
 
-        public ResponseWrapper(object data, string message = "")
+        public BaseResponse(object data, string message = "")
         {
             this.data = data;
             this.message = message;

@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using MediaStackCore.Models;
 
-namespace MediaStack_API.Models
+namespace MediaStack_API.Models.ViewModels
 {
     public class MediaViewModel
     {

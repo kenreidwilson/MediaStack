@@ -1,6 +1,6 @@
-﻿namespace MediaStack_API.Models
+﻿namespace MediaStack_API.Models.ViewModels
 {
-    public class TagViewModel
+    public class ArtistViewModel
     {
         #region Properties
 

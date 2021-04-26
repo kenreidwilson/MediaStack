@@ -3,7 +3,7 @@ using System.Linq;
 using MediaStackCore.Data_Access_Layer;
 using MediaStackCore.Models;
 
-namespace MediaStack_API.Models
+namespace MediaStack_API.Models.Requests
 {
     public class MediaSearchQuery
     {

@@ -4,7 +4,9 @@ using System.Linq;
 using System.Threading.Tasks;
 using AutoMapper;
 using MediaStack_API.Models;
-using MediaStack_API.Responses;
+using MediaStack_API.Models.Requests;
+using MediaStack_API.Models.Responses;
+using MediaStack_API.Models.ViewModels;
 using MediaStackCore.Models;
 using MediaStackCore.Services.UnitOfWorkService;
 
@@ -30,7 +32,7 @@ namespace MediaStack_API.Controllers
             {
                 IQueryable<Media> query = searchQuery.GetQuery(unitOfWork);
                 int total = query.Count();
-                var response = new SearchResponse(await query
+                var response = new MediaSearchResponse(await query
                                                         .Skip(searchQuery.Offset)
                                                         .Take(searchQuery.Count)
                                                         .Select(m => this.Mapper.Map<MediaViewModel>(m))
