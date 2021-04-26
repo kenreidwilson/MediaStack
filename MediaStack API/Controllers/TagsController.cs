@@ -1,7 +1,6 @@
 ﻿using System.Linq;
 using System.Threading.Tasks;
 using AutoMapper;
-using MediaStack_API.Models;
 using MediaStack_API.Models.Responses;
 using MediaStack_API.Models.ViewModels;
 using MediaStackCore.Models;
@@ -42,6 +41,28 @@ namespace MediaStack_API.Controllers
             }
         }
 
+        [HttpPost]
+        public IActionResult Index([FromBody] TagViewModel tag)
+        {
+            using (var unitOfWork = this.UnitOfWorkService.Create())
+            {
+                if (!ModelState.IsValid || tag.ID != 0)
+                {
+                    return BadRequest();
+                }
+
+                if (unitOfWork.Tags.Get().Any(t => t.Name == tag.Name))
+                {
+                    return BadRequest(new BaseResponse(null, "Duplicate."));
+                }
+
+                unitOfWork.Tags.Insert(this.Mapper.Map<Tag>(tag));
+                unitOfWork.Save();
+                var createdTag = unitOfWork.Tags.Get(t => t.Name == tag.Name).First();
+                return Ok(new BaseResponse(this.Mapper.Map<TagViewModel>(createdTag)));
+            }
+        }
+
         [HttpGet("{id}")]
         public IActionResult Details(int id)
         {
@@ -57,23 +78,6 @@ namespace MediaStack_API.Controllers
                 }
 
                 return Ok(this.Mapper.Map<TagViewModel>(tag));
-            }
-        }
-
-        [HttpPost]
-        public IActionResult Index([FromBody] Tag tag)
-        {
-            using (var unitOfWork = this.UnitOfWorkService.Create())
-            {
-                if (unitOfWork.Tags.Get().Any(t => t.Name == tag.Name))
-                {
-                    return BadRequest(new BaseResponse(null, "Duplicate."));
-                }
-
-                unitOfWork.Tags.Insert(tag);
-                unitOfWork.Save();
-                var createdTag = unitOfWork.Tags.Get(t => t.Name == tag.Name).First();
-                return Ok(new BaseResponse(this.Mapper.Map<TagViewModel>(createdTag)));
             }
         }
 

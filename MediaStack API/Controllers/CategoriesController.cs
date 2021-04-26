@@ -1,7 +1,6 @@
 ﻿using System.Linq;
 using System.Threading.Tasks;
 using AutoMapper;
-using MediaStack_API.Models;
 using MediaStack_API.Models.Responses;
 using MediaStack_API.Models.ViewModels;
 using MediaStackCore.Models;
@@ -42,6 +41,28 @@ namespace MediaStack_API.Controllers
             }
         }
 
+        [HttpPost]
+        public IActionResult Index([FromBody] CategoryViewModel category)
+        {
+            using (var unitOfWork = this.UnitOfWorkService.Create())
+            {
+                if (!ModelState.IsValid || category.ID != 0)
+                {
+                    return BadRequest();
+                }
+
+                if (unitOfWork.Categories.Get().Any(c => c.Name == category.Name))
+                {
+                    return BadRequest(new BaseResponse(null, "Duplicate."));
+                }
+
+                unitOfWork.Categories.Insert(this.Mapper.Map<Category>(category));
+                unitOfWork.Save();
+                var createdCategory = unitOfWork.Categories.Get(c => c.Name == category.Name).First();
+                return Ok(new BaseResponse(this.Mapper.Map<CategoryViewModel>(createdCategory)));
+            }
+        }
+
         [HttpGet("{id}")]
         public IActionResult Details(int id)
         {
@@ -57,23 +78,6 @@ namespace MediaStack_API.Controllers
                 }
 
                 return Ok(category);
-            }
-        }
-
-        [HttpPost]
-        public IActionResult Index([FromBody] Category category)
-        {
-            using (var unitOfWork = this.UnitOfWorkService.Create())
-            {
-                if (unitOfWork.Categories.Get().Any(c => c.Name == category.Name))
-                {
-                    return BadRequest(new BaseResponse(null, "Duplicate."));
-                }
-
-                unitOfWork.Categories.Insert(category);
-                unitOfWork.Save();
-                var createdCategory = unitOfWork.Categories.Get(c => c.Name == category.Name).First();
-                return Ok(new BaseResponse(this.Mapper.Map<CategoryViewModel>(createdCategory)));
             }
         }
 

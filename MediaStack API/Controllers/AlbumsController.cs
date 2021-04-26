@@ -43,6 +43,28 @@ namespace MediaStack_API.Controllers
             }
         }
 
+        [HttpPost]
+        public IActionResult Index([FromBody] AlbumViewModel album)
+        {
+            using (var unitOfWork = this.UnitOfWorkService.Create())
+            {
+                if (!ModelState.IsValid || album.ID != 0 || !unitOfWork.Artists.Get().Any(a => a.ID == album.ArtistID))
+                {
+                    return BadRequest();
+                }
+
+                if (unitOfWork.Albums.Get().Any(a => a.ArtistID == album.ArtistID && a.Name == album.Name))
+                {
+                    return BadRequest(new BaseResponse(null, "Duplicate."));
+                }
+
+                unitOfWork.Albums.Insert(this.Mapper.Map<Album>(album));
+                unitOfWork.Save();
+                Album createdAlbum = unitOfWork.Albums.Get(a => a.ArtistID == album.ArtistID && a.Name == album.Name).First();
+                return Ok(new BaseResponse(this.Mapper.Map<AlbumViewModel>(createdAlbum)));
+            }
+        }
+
         [HttpGet("{id}")]
         public IActionResult Details(int id)
         {
@@ -58,23 +80,6 @@ namespace MediaStack_API.Controllers
                 }
 
                 return Ok(this.Mapper.Map<AlbumViewModel>(album));
-            }
-        }
-
-        [HttpPost]
-        public IActionResult Index([FromBody] Album album)
-        {
-            using (var unitOfWork = this.UnitOfWorkService.Create())
-            {
-                if (unitOfWork.Albums.Get().Any(a => a.ArtistID == album.ArtistID && a.Name == album.Name))
-                {
-                    return BadRequest(new BaseResponse(null, "Duplicate."));
-                }
-
-                unitOfWork.Albums.Insert(album);
-                unitOfWork.Save();
-                Album createdAlbum = unitOfWork.Albums.Get(a => a.ArtistID == album.ArtistID && a.Name == album.Name).First();
-                return Ok(new BaseResponse(this.Mapper.Map<AlbumViewModel>(createdAlbum)));
             }
         }
 

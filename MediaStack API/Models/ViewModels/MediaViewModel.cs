@@ -24,6 +24,8 @@ namespace MediaStack_API.Models.ViewModels
 
         public DateTime Created { get; set; } = DateTime.Now;
 
+        public int AlbumOrder { get; set; }
+
         public int Score { get; set; } = 0;
 
         public string Source { get; set; }

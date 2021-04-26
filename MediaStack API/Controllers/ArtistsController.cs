@@ -1,7 +1,6 @@
 ﻿using System.Linq;
 using System.Threading.Tasks;
 using AutoMapper;
-using MediaStack_API.Models;
 using MediaStack_API.Models.Responses;
 using MediaStack_API.Models.ViewModels;
 using MediaStackCore.Models;
@@ -42,6 +41,28 @@ namespace MediaStack_API.Controllers
             }
         }
 
+        [HttpPost]
+        public IActionResult Index([FromBody] ArtistViewModel artist)
+        {
+            using (var unitOfWork = this.UnitOfWorkService.Create())
+            {
+                if (!ModelState.IsValid || artist.ID != 0)
+                {
+                    return BadRequest();
+                }
+
+                if (unitOfWork.Artists.Get().Any(a => a.Name == artist.Name))
+                {
+                    return BadRequest(new BaseResponse(null, "Duplicate."));
+                }
+
+                unitOfWork.Artists.Insert(this.Mapper.Map<Artist>(artist));
+                unitOfWork.Save();
+                var createdArtist = unitOfWork.Artists.Get(t => t.Name == artist.Name).First();
+                return Ok(new BaseResponse(this.Mapper.Map<ArtistViewModel>(createdArtist)));
+            }
+        }
+
         [HttpGet("{id}")]
         public IActionResult Details(int id)
         {
@@ -57,23 +78,6 @@ namespace MediaStack_API.Controllers
                 }
 
                 return Ok(this.Mapper.Map<ArtistViewModel>(artist));
-            }
-        }
-
-        [HttpPost]
-        public IActionResult Index([FromBody] Artist artist)
-        {
-            using (var unitOfWork = this.UnitOfWorkService.Create())
-            {
-                if (unitOfWork.Artists.Get().Any(a => a.Name == artist.Name))
-                {
-                    return BadRequest(new BaseResponse(null, "Duplicate."));
-                }
-
-                unitOfWork.Artists.Insert(artist);
-                unitOfWork.Save();
-                var createdArtist = unitOfWork.Artists.Get(t => t.Name == artist.Name).First();
-                return Ok(new BaseResponse(this.Mapper.Map<ArtistViewModel>(createdArtist)));
             }
         }
 
