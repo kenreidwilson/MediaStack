@@ -1,8 +1,8 @@
 ﻿using System.Threading.Tasks;
 using MediaStack_Importer.Services.MonitorService;
 using MediaStack_Importer.Services.ScannerService;
-using MediaStack_Library.Controllers;
-using MediaStack_Library.Services.UnitOfWorkService;
+using MediaStackCore.Controllers;
+using MediaStackCore.Services.UnitOfWorkService;
 
 namespace MediaStack_Importer.Importer
 {

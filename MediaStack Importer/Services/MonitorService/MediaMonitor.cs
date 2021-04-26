@@ -4,9 +4,9 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using MediaStack_Library.Controllers;
-using MediaStack_Library.Data_Access_Layer;
-using MediaStack_Library.Services.UnitOfWorkService;
+using MediaStackCore.Controllers;
+using MediaStackCore.Data_Access_Layer;
+using MediaStackCore.Services.UnitOfWorkService;
 
 namespace MediaStack_Importer.Services.MonitorService
 {

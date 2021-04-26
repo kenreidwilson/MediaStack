@@ -3,10 +3,11 @@
   <PropertyGroup>
     <TargetFramework>net5.0</TargetFramework>
     <RootNamespace>MediaStack_Importer</RootNamespace>
+    <OutputType>Exe</OutputType>
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\MediaStack\MediaStack Core.csproj" />
+    <ProjectReference Include="..\MediaStack\MediaStackCore.csproj" />
   </ItemGroup>
 
 </Project>

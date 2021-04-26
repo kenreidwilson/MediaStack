@@ -11,8 +11,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MediaStackCore.Tests", "Med
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MediaStack Importer", "MediaStack Importer\MediaStack Importer.csproj", "{AECAA9EA-4187-437D-BCE9-EEF2A3F0AF06}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MediaStack Test App", "MediaStack Test App\MediaStack Test App.csproj", "{4D8EBB7D-30DA-4C78-B8AA-BE17AC86EBA8}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MediaStack API", "MediaStack API\MediaStack API.csproj", "{59B69758-1F0E-41AC-8E50-CB2BE1FD203E}"
 EndProject
 Global
@@ -37,10 +35,6 @@ Global
 		{AECAA9EA-4187-437D-BCE9-EEF2A3F0AF06}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{AECAA9EA-4187-437D-BCE9-EEF2A3F0AF06}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{AECAA9EA-4187-437D-BCE9-EEF2A3F0AF06}.Release|Any CPU.Build.0 = Release|Any CPU
-		{4D8EBB7D-30DA-4C78-B8AA-BE17AC86EBA8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{4D8EBB7D-30DA-4C78-B8AA-BE17AC86EBA8}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{4D8EBB7D-30DA-4C78-B8AA-BE17AC86EBA8}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{4D8EBB7D-30DA-4C78-B8AA-BE17AC86EBA8}.Release|Any CPU.Build.0 = Release|Any CPU
 		{59B69758-1F0E-41AC-8E50-CB2BE1FD203E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{59B69758-1F0E-41AC-8E50-CB2BE1FD203E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{59B69758-1F0E-41AC-8E50-CB2BE1FD203E}.Release|Any CPU.ActiveCfg = Release|Any CPU

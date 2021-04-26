@@ -1,9 +1,9 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
-using MediaStack_Library.Controllers;
-using MediaStack_Library.Data_Access_Layer;
-using MediaStack_Library.Model;
+using MediaStackCore.Controllers;
+using MediaStackCore.Data_Access_Layer;
+using MediaStackCore.Models;
 
 namespace MediaStack_Importer.Services
 {
