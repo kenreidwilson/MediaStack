@@ -1,6 +1,6 @@
 ﻿namespace MediaStack_API.Models
 {
-    public class TagDto
+    public class TagViewModel
     {
         #region Properties
 

@@ -1,6 +1,6 @@
 ﻿namespace MediaStack_API.Models
 {
-    public class AlbumDto
+    public class AlbumViewModel
     {
         public int ID { get; set; }
 

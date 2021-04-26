@@ -37,7 +37,7 @@ namespace MediaStack_API.Controllers
         {
             using (var unitOfWork = this.UnitOfWorkService.Create())
             {
-                return Ok(await unitOfWork.Artists.Get().Select(a => this.Mapper.Map<ArtistDto>(a)).ToListAsync());
+                return Ok(await unitOfWork.Artists.Get().Select(a => this.Mapper.Map<ArtistViewModel>(a)).ToListAsync());
             }
         }
 
@@ -55,7 +55,7 @@ namespace MediaStack_API.Controllers
                     return NotFound();
                 }
 
-                return Ok(this.Mapper.Map<ArtistDto>(artist));
+                return Ok(this.Mapper.Map<ArtistViewModel>(artist));
             }
         }
 
@@ -72,7 +72,7 @@ namespace MediaStack_API.Controllers
                 unitOfWork.Artists.Insert(artist);
                 unitOfWork.Save();
                 var createdArtist = unitOfWork.Artists.Get(t => t.Name == artist.Name).First();
-                return Ok(new ResponseWrapper(this.Mapper.Map<ArtistDto>(createdArtist)));
+                return Ok(new ResponseWrapper(this.Mapper.Map<ArtistViewModel>(createdArtist)));
             }
         }
 

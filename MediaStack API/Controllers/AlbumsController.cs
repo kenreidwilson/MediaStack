@@ -38,7 +38,7 @@ namespace MediaStack_API.Controllers
         {
             using (var unitOfWork = this.UnitOfWorkService.Create())
             {
-                return Ok(await unitOfWork.Albums.Get().Select(a => this.Mapper.Map<AlbumDto>(a)).ToListAsync());
+                return Ok(await unitOfWork.Albums.Get().Select(a => this.Mapper.Map<AlbumViewModel>(a)).ToListAsync());
             }
         }
 
@@ -56,7 +56,7 @@ namespace MediaStack_API.Controllers
                     return NotFound();
                 }
 
-                return Ok(this.Mapper.Map<AlbumDto>(album));
+                return Ok(this.Mapper.Map<AlbumViewModel>(album));
             }
         }
 
@@ -73,7 +73,7 @@ namespace MediaStack_API.Controllers
                 unitOfWork.Albums.Insert(album);
                 unitOfWork.Save();
                 Album createdAlbum = unitOfWork.Albums.Get(a => a.ArtistID == album.ArtistID && a.Name == album.Name).First();
-                return Ok(new ResponseWrapper(this.Mapper.Map<AlbumDto>(createdAlbum)));
+                return Ok(new ResponseWrapper(this.Mapper.Map<AlbumViewModel>(createdAlbum)));
             }
         }
 

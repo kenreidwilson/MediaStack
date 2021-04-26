@@ -72,7 +72,7 @@ namespace MediaStack_API.Controllers
                 unitOfWork.Categories.Insert(category);
                 unitOfWork.Save();
                 var createdCategory = unitOfWork.Categories.Get(c => c.Name == category.Name).First();
-                return Ok(new ResponseWrapper(this.Mapper.Map<CategoryDto>(createdCategory)));
+                return Ok(new ResponseWrapper(this.Mapper.Map<CategoryViewModel>(createdCategory)));
             }
         }
 

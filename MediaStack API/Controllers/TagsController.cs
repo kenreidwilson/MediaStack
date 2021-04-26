@@ -37,7 +37,7 @@ namespace MediaStack_API.Controllers
         {
             using (var unitOfWork = this.UnitOfWorkService.Create())
             {
-                return Ok(await unitOfWork.Tags.Get().Select(t => this.Mapper.Map<TagDto>(t)).ToListAsync());
+                return Ok(await unitOfWork.Tags.Get().Select(t => this.Mapper.Map<TagViewModel>(t)).ToListAsync());
             }
         }
 
@@ -55,7 +55,7 @@ namespace MediaStack_API.Controllers
                     return NotFound();
                 }
 
-                return Ok(this.Mapper.Map<TagDto>(tag));
+                return Ok(this.Mapper.Map<TagViewModel>(tag));
             }
         }
 
@@ -72,7 +72,7 @@ namespace MediaStack_API.Controllers
                 unitOfWork.Tags.Insert(tag);
                 unitOfWork.Save();
                 var createdTag = unitOfWork.Tags.Get(t => t.Name == tag.Name).First();
-                return Ok(new ResponseWrapper(this.Mapper.Map<TagDto>(createdTag)));
+                return Ok(new ResponseWrapper(this.Mapper.Map<TagViewModel>(createdTag)));
             }
         }
 

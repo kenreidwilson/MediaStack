@@ -8,11 +8,11 @@ namespace MediaStack_API.Infrastructure
     {
         public DefaultAutoMapperProfile()
         {
-            CreateMap<Album, AlbumDto>();
-            CreateMap<Tag, TagDto>();
-            CreateMap<Artist, ArtistDto>();
-            CreateMap<Category, CategoryDto>();
-            CreateMap<Media, MediaDto>();
+            CreateMap<Album, AlbumViewModel>();
+            CreateMap<Tag, TagViewModel>();
+            CreateMap<Artist, ArtistViewModel>();
+            CreateMap<Category, CategoryViewModel>();
+            CreateMap<Media, MediaViewModel>();
         }
     }
 }

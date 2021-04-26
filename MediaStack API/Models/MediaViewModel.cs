@@ -4,7 +4,7 @@ using MediaStackCore.Models;
 
 namespace MediaStack_API.Models
 {
-    public class MediaDto
+    public class MediaViewModel
     {
         #region Properties
 
