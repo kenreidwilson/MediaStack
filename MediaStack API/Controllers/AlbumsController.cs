@@ -83,8 +83,8 @@ namespace MediaStack_API.Controllers
             }
         }
 
-        [HttpPost]
-        public IActionResult Sort(AlbumSortRequest request)
+        [HttpPost("Sort")]
+        public IActionResult Sort([FromBody] AlbumSortRequest request)
         {
             using (var unitOfWork = this.UnitOfWorkService.Create())
             {
