@@ -3,14 +3,16 @@ using System;
 using MediaStackCore.Data_Access_Layer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace MediaStackCore.Migrations
 {
     [DbContext(typeof(MediaStackContext))]
-    partial class MediaStackContextModelSnapshot : ModelSnapshot
+    [Migration("20210426180221_media_album_order")]
+    partial class media_album_order
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

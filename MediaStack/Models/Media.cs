@@ -27,10 +27,12 @@ namespace MediaStackCore.Models
 
         public MediaType? Type { get; set; }
 
-        public DateTime Created { get; set; } = DateTime.Now;
-
         public int Score { get; set; } = 0;
 
         public string Source { get; set; }
+
+        public DateTime Created { get; set; } = DateTime.Now;
+
+        public int AlbumOrder { get; set; } = 0;
     }
 }
