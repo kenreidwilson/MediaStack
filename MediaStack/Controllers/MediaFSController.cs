@@ -20,6 +20,11 @@ namespace MediaStackCore.Controllers
 
         public MediaFSController()
         {
+            if (string.IsNullOrEmpty(this.MediaDirectory))
+            {
+                throw new InvalidOperationException("Invalid Media Directory");
+            }
+
             if (this.MediaDirectory[0] != Path.DirectorySeparatorChar)
             {
                 this.MediaDirectory += Path.DirectorySeparatorChar;

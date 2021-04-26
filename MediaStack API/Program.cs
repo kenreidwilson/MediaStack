@@ -1,11 +1,8 @@
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using System.IO;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Hosting;
+using MediaStackCore.Utility;
 
 namespace MediaStack_API
 {
@@ -13,6 +10,7 @@ namespace MediaStack_API
     {
         public static void Main(string[] args)
         {
+            EnvParser.ParseEnvFromFile($@"{Environment.CurrentDirectory}{Path.DirectorySeparatorChar}.env");
             CreateHostBuilder(args).Build().Run();
         }
 

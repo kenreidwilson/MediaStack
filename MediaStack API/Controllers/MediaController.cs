@@ -4,6 +4,8 @@ using AutoMapper;
 using MediaStack_API.Models.Requests;
 using MediaStack_API.Models.Responses;
 using MediaStack_API.Models.ViewModels;
+using MediaStackCore.Controllers;
+using MediaStackCore.Models;
 using MediaStackCore.Services.UnitOfWorkService;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -15,6 +17,8 @@ namespace MediaStack_API.Controllers
     {
         #region Properties
 
+        protected IMediaFileSystemController FSController { get; }
+
         protected IUnitOfWorkService UnitOfWorkService { get; }
 
         protected IMapper Mapper { get; }
@@ -23,10 +27,13 @@ namespace MediaStack_API.Controllers
 
         #region Constructors
 
-        public MediaController(IUnitOfWorkService unitOfWorkService, IMapper mapper)
+        public MediaController(IUnitOfWorkService unitOfWorkService, 
+            IMapper mapper, 
+            IMediaFileSystemController fsController)
         {
             this.UnitOfWorkService = unitOfWorkService;
             this.Mapper = mapper;
+            this.FSController = fsController;
         }
 
         #endregion
@@ -74,6 +81,30 @@ namespace MediaStack_API.Controllers
 
                 return Ok(new BaseResponse(editRequest.UpdateMedia(unitOfWork)));
             }
+        }
+
+        [HttpGet("{id}/File")]
+        public IActionResult File(int id)
+        {
+            if (id == 0)
+            {
+                return BadRequest();
+            }
+
+            using (var unitOfWork = this.UnitOfWorkService.Create())
+            {
+                Media media = unitOfWork.Media.Get(m => m.ID == id).FirstOrDefault();
+                if (media == null)
+                {
+                    return NotFound();
+                }
+                return File(this.GetMediaImageBytes(media), "image/png");
+            }
+        }
+
+        protected byte[] GetMediaImageBytes(Media media)
+        {
+            return System.IO.File.ReadAllBytes(this.FSController.GetMediaFullPath(media));
         }
 
         #endregion
