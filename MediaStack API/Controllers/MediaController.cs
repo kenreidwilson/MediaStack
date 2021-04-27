@@ -8,6 +8,7 @@ using MediaStack_API.Services.Thumbnailer;
 using MediaStackCore.Controllers;
 using MediaStackCore.Models;
 using MediaStackCore.Services.UnitOfWorkService;
+using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -45,8 +46,11 @@ namespace MediaStack_API.Controllers
 
         #region Methods
 
+        [EnableCors("_myAllowSpecificOrigins")]
+        [HttpPost]
         public async Task<IActionResult> Index([FromBody] MediaSearchQuery searchQuery)
         {
+            searchQuery ??= new MediaSearchQuery();
             if (!ModelState.IsValid)
             {
                 return BadRequest();
@@ -66,6 +70,24 @@ namespace MediaStack_API.Controllers
                     Total = total
                 };
                 return Ok(response);
+            }
+        }
+
+        [HttpGet("{id}")]
+        public IActionResult Info(int id)
+        {
+            using (var unitOfWork = this.UnitOfWorkService.Create())
+            {
+                var media = unitOfWork.Media
+                                    .Get()
+                                    .FirstOrDefault(m => m.ID == id);
+
+                if (media == null)
+                {
+                    return NotFound();
+                }
+
+                return Ok(new BaseResponse(this.Mapper.Map<MediaViewModel>(media)));
             }
         }
 

@@ -39,7 +39,7 @@ namespace MediaStack_API.Controllers
         {
             using (var unitOfWork = this.UnitOfWorkService.Create())
             {
-                return Ok(await unitOfWork.Albums.Get().Select(a => this.Mapper.Map<AlbumViewModel>(a)).ToListAsync());
+                return Ok(new BaseResponse(await unitOfWork.Albums.Get().Select(a => this.Mapper.Map<AlbumViewModel>(a)).ToListAsync()));
             }
         }
 
@@ -79,7 +79,7 @@ namespace MediaStack_API.Controllers
                     return NotFound();
                 }
 
-                return Ok(this.Mapper.Map<AlbumViewModel>(album));
+                return Ok(new BaseResponse(this.Mapper.Map<AlbumViewModel>(album)));
             }
         }
 
@@ -93,7 +93,7 @@ namespace MediaStack_API.Controllers
                     return BadRequest();
                 }
 
-                return Ok(this.Mapper.Map<AlbumViewModel>(request.SortRequestedAlbum(unitOfWork)));
+                return Ok(new BaseResponse(this.Mapper.Map<AlbumViewModel>(request.SortRequestedAlbum(unitOfWork))));
             }
         }
 
