@@ -1,44 +1,48 @@
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.HttpsPolicy;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
-using Microsoft.OpenApi.Models;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using AutoMapper;
 using MediaStack_API.Infrastructure;
-using MediaStack_API.Models;
 using MediaStack_API.Services.Thumbnailer;
 using MediaStackCore.Controllers;
 using MediaStackCore.Data_Access_Layer;
-using MediaStackCore.Models;
 using MediaStackCore.Services.UnitOfWorkService;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
 namespace MediaStack_API
 {
     public class Startup
     {
-        readonly string MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
+        #region Data members
+
+        private readonly string MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
+
+        #endregion
+
+        #region Properties
+
+        public IConfiguration Configuration { get; }
+
+        #endregion
+
+        #region Constructors
 
         public Startup(IConfiguration configuration)
         {
-            Configuration = configuration;
+            this.Configuration = configuration;
         }
 
-        public IConfiguration Configuration { get; }
+        #endregion
+
+        #region Methods
 
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddCors(options =>
             {
-                options.AddPolicy(name: MyAllowSpecificOrigins,
+                options.AddPolicy(this.MyAllowSpecificOrigins,
                     builder =>
                     {
                         builder.AllowAnyOrigin()
@@ -73,10 +77,9 @@ namespace MediaStack_API
 
             app.UseAuthorization();
 
-            app.UseEndpoints(endpoints =>
-            {
-                endpoints.MapControllers().RequireCors(MyAllowSpecificOrigins);
-            });
+            app.UseEndpoints(endpoints => { endpoints.MapControllers().RequireCors(this.MyAllowSpecificOrigins); });
         }
+
+        #endregion
     }
 }
