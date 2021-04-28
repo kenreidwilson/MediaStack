@@ -18,7 +18,8 @@ namespace MediaStack_API.Infrastructure
             CreateMap<ArtistViewModel, Artist>();
             CreateMap<Category, CategoryViewModel>();
             CreateMap<CategoryViewModel, Category>();
-            CreateMap<Media, MediaViewModel>();
+            CreateMap<Media, MediaViewModel>()
+                .ForMember(m => m.Tags, opt => opt.MapFrom(src => src.Tags));
             CreateMap<MediaViewModel, Media>();
         }
 

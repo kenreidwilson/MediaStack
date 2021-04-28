@@ -61,6 +61,7 @@ namespace MediaStack_API.Controllers
                 var query = searchQuery.GetQuery(unitOfWork);
                 var total = query.Count();
                 var response = new MediaSearchResponse(await query
+                                                             .Include(m => m.Tags)
                                                              .Skip(searchQuery.Offset)
                                                              .Take(searchQuery.Count)
                                                              .Select(m => this.Mapper.Map<MediaViewModel>(m))
@@ -79,8 +80,9 @@ namespace MediaStack_API.Controllers
             using (var unitOfWork = this.UnitOfWorkService.Create())
             {
                 var media = unitOfWork.Media
-                                    .Get()
-                                    .FirstOrDefault(m => m.ID == id);
+                                      .Get()
+                                      .Include(m => m.Tags)
+                                      .FirstOrDefault(m => m.ID == id);
 
                 if (media == null)
                 {
@@ -91,8 +93,8 @@ namespace MediaStack_API.Controllers
             }
         }
 
-        [HttpPost("Edit")]
-        public IActionResult Edit([FromBody] MediaEditRequest editRequest)
+        [HttpPost("{id}/Edit")]
+        public IActionResult Edit([FromBody] MediaEditRequest editRequest, int id)
         {
             using (var unitOfWork = this.UnitOfWorkService.Create())
             {
@@ -101,12 +103,23 @@ namespace MediaStack_API.Controllers
                     return BadRequest();
                 }
 
-                if (!unitOfWork.Media.Get().Any(m => m.ID == editRequest.MediaID))
+                Media media = unitOfWork.Media.Get().Include(m => m.Tags).FirstOrDefault(m => m.ID == id);
+                if (media == null)
                 {
                     return NotFound();
                 }
 
-                return Ok(new BaseResponse(editRequest.UpdateMedia(unitOfWork)));
+                Media newMedia;
+                try
+                {
+                    newMedia = editRequest.UpdateMedia(unitOfWork, media);
+                }
+                catch (MediaEditRequest.BadRequestException)
+                {
+                    return BadRequest();
+                }
+                unitOfWork.Save();
+                return Ok(new BaseResponse(this.Mapper.Map<MediaViewModel>(newMedia)));
             }
         }
 

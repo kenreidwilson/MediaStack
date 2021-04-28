@@ -16,7 +16,7 @@ namespace MediaStack_API.Models.ViewModels
 
         public int? AlbumID { get; set; }
 
-        public ICollection<Tag> Tags { get; set; } = new HashSet<Tag>();
+        public ICollection<TagViewModel> Tags { get; set; } = new List<TagViewModel>();
 
         public string Hash { get; set; }
 
