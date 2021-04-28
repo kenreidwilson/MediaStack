@@ -33,6 +33,6 @@ namespace MediaStackCore.Models
 
         public DateTime Created { get; set; } = DateTime.Now;
 
-        public int AlbumOrder { get; set; } = 0;
+        public int AlbumOrder { get; set; } = -1;
     }
 }
