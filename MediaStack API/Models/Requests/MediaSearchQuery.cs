@@ -37,7 +37,7 @@ namespace MediaStack_API.Models.Requests
 
         public IQueryable<Media> GetQuery(IUnitOfWork unitOfWork)
         {
-            IQueryable<Media> query = unitOfWork.Media.Get();
+            IQueryable<Media> query = unitOfWork.Media.Get(m => m.Path != null);
 
             switch (this.Mode)
             {
