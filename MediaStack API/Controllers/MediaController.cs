@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using System.Threading.Tasks;
 using AutoMapper;
 using MediaStack_API.Models.Requests;
@@ -93,7 +94,8 @@ namespace MediaStack_API.Controllers
             }
         }
 
-        [HttpPost("{id}/Edit")]
+        [EnableCors("_myAllowSpecificOrigins")]
+        [HttpPut("{id}/Edit")]
         public IActionResult Edit([FromBody] MediaEditRequest editRequest, int id)
         {
             using (var unitOfWork = this.UnitOfWorkService.Create())
@@ -139,7 +141,15 @@ namespace MediaStack_API.Controllers
                     return NotFound();
                 }
 
-                return File(this.GetMediaImageBytes(media), "image/png");
+
+                try
+                {
+                    return File(this.GetMediaImageBytes(media), "image/png");
+                }
+                catch (Exception)
+                {
+                    return StatusCode(500);
+                }
             }
         }
 
@@ -159,12 +169,19 @@ namespace MediaStack_API.Controllers
                     return NotFound();
                 }
 
-                if (this.Thumbnailer.HasThumbnail(media) || this.Thumbnailer.CreateThumbnail(media))
+                try
                 {
-                    return File(this.GetMediaThumbnailBytes(media), "image/png");
-                }
+                    if (this.Thumbnailer.HasThumbnail(media) || this.Thumbnailer.CreateThumbnail(media))
+                    {
+                        return File(this.GetMediaThumbnailBytes(media), "image/png");
+                    }
 
-                return File(this.GetDefaultThumbnailBytes(), "image/png");
+                    return File(this.GetDefaultThumbnailBytes(), "image/png");
+                }
+                catch (Exception)
+                {
+                    return StatusCode(500);
+                }
             }
         }
 
