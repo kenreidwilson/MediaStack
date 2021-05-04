@@ -97,7 +97,10 @@ namespace MediaStack_Importer.Services
                 }
             }
 
-            this.UpdateMedia(media, unitOfWork);
+            lock (unitOfWorkLock)
+            {
+                this.UpdateMedia(media, unitOfWork);
+            }
 
             if (media.ID != 0)
             {
