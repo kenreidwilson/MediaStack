@@ -49,7 +49,7 @@ namespace MediaStack_Importer.Services.ScannerService.ScannerJobs
                 Category potentialCategory = this.getCategoryIfNotExists(categoryName);
                 if (potentialCategory != null)
                 {
-                    BatchedEntities[categoryPath] = potentialCategory;
+                    BatchedEntities[categoryName] = potentialCategory;
                 }
             }
         }

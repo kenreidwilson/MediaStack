@@ -41,10 +41,15 @@ namespace MediaStack_Importer.Services.ScannerService
         {
             Console.WriteLine("Creating Media References");
             new CreateCategoriesJob(this.FSController, this.UnitOfWorkService).CreateCategories();
+            new CreateArtistsJob(this.FSController, this.UnitOfWorkService).CreateArtists();
             Console.WriteLine("Searching for new Media...");
-            new CreateNewMediaJob(this.FSController, this.UnitOfWorkService).CreateNewMedia();
+            var nmJob = new CreateNewMediaJob(this.FSController, this.UnitOfWorkService);
+            nmJob.CreateNewMedia();
             Console.WriteLine("Verifying Media...");
-            new VerifyMediaJob(this.FSController, this.UnitOfWorkService).VerifyAllMedia();
+            var vmJob = new VerifyMediaJob(this.FSController, this.UnitOfWorkService) {
+                HashCache = nmJob.HashCache
+            };
+            vmJob.VerifyAllMedia();
             Console.WriteLine("Done");
         }
 

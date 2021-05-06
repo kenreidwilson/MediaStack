@@ -77,9 +77,9 @@ namespace MediaStack_Importer.Services.ScannerService.ScannerJobs
             });
         }
 
-        protected abstract void Save();
-
         protected abstract void ProcessData(object data);
+
+        protected abstract void Save();
 
         public void Dispose()
         {
