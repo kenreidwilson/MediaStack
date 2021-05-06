@@ -43,8 +43,8 @@ namespace MediaStack_Importer.Services.ScannerService
             new CreateCategoriesJob(this.FSController, this.UnitOfWorkService).CreateCategories();
             Console.WriteLine("Searching for new Media...");
             new CreateNewMediaJob(this.FSController, this.UnitOfWorkService).CreateNewMedia();
-            //Console.WriteLine("Verifing Media...");
-            //new VerifyMediaJob(this.FSController, this.UnitOfWorkService)
+            Console.WriteLine("Verifying Media...");
+            new VerifyMediaJob(this.FSController, this.UnitOfWorkService).VerifyAllMedia();
             Console.WriteLine("Done");
         }
 

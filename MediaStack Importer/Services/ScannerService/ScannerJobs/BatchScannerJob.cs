@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 
 namespace MediaStack_Importer.Services.ScannerService.ScannerJobs
@@ -32,15 +33,15 @@ namespace MediaStack_Importer.Services.ScannerService.ScannerJobs
 
         #region Methods
 
-        protected virtual void Execute(ICollection<object> data)
+        protected virtual void Execute(IEnumerable<object> data)
         {
-            this.toProcess = data.Count;
+            this.toProcess = data.Count();
             foreach (var aData in data)
             {
                 this.ExecuteProcess(aData);
             }
 
-            if (data.Count != 0)
+            if (data.Any())
             {
                 this.finishEvent.WaitOne();
                 this.Save();

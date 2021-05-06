@@ -1,5 +1,4 @@
-﻿using System;
-using System.IO;
+﻿using System.IO;
 using System.Linq;
 using MediaStackCore.Controllers;
 using MediaStackCore.Data_Access_Layer;
@@ -19,14 +18,33 @@ namespace MediaStack_Importer.Services.ScannerService.ScannerJobs
 
         #region Methods
 
+        public void VerifyAllMedia()
+        {
+            using var unitOfWork = UnitOfWorkService.Create();
+            this.Execute(unitOfWork.Media.Get(m => m.Path != null).ToList());
+        }
+
         protected override void Save()
         {
-            throw new NotImplementedException();
+            using (var unitOfWork = UnitOfWorkService.Create())
+            {
+                unitOfWork.Media.BulkInsert(
+                    BatchedEntities.Values
+                                   .Where(media => media.ID == 0 && !unitOfWork.Media
+                                                                               .Get()
+                                                                               .Any(m => m.Hash == media.Hash))
+                                   .ToList());
+                unitOfWork.Media.BulkUpdate(BatchedEntities.Values.Where(m => m.ID != 0).ToList());
+                unitOfWork.Save();
+            }
         }
 
         protected override void ProcessData(object data)
         {
-            throw new NotImplementedException();
+            if (data is Media media)
+            {
+                this.VerifyMedia(media);
+            }
         }
 
         protected Media VerifyMedia(Media media)
