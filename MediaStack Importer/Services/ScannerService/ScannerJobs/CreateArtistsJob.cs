@@ -30,7 +30,7 @@ namespace MediaStack_Importer.Services.ScannerService.ScannerJobs
 
         public void CreateArtists()
         {
-            Execute(IOUtilities.GetDirectoryNamesAtLevel(this.FSController.MediaDirectory, 1));
+            Execute(IOUtilities.GetDirectoriesAtLevel(this.FSController.MediaDirectory, 1).Select(d => d.Name));
         }
 
         protected override void ProcessData(object data)

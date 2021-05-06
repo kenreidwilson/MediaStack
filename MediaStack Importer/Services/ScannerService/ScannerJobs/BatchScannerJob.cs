@@ -12,7 +12,7 @@ namespace MediaStack_Importer.Services.ScannerService.ScannerJobs
 
         protected int BatchSize = 500;
 
-        protected readonly IDictionary<string, T> BatchedEntities;
+        protected readonly IDictionary<object, T> BatchedEntities;
 
         private int toProcess;
 
@@ -26,7 +26,7 @@ namespace MediaStack_Importer.Services.ScannerService.ScannerJobs
 
         protected BatchScannerJob()
         {
-            this.BatchedEntities = new ConcurrentDictionary<string, T>();
+            this.BatchedEntities = new ConcurrentDictionary<object, T>();
         }
 
         #endregion
