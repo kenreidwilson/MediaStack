@@ -84,7 +84,7 @@ namespace MediaStackCore.Controllers
         /// </summary>
         /// <param name="stream"></param>
         /// <returns></returns>
-        public string CalculateHash(FileStream stream)
+        public string CalculateHash(Stream stream)
         {
             using (var md5 = SHA1.Create())
             {
@@ -93,7 +93,7 @@ namespace MediaStackCore.Controllers
             }
         }
 
-        public MediaType? DetermineMediaType(FileStream stream)
+        public MediaType? DetermineMediaType(Stream stream)
         {
             var fileType = stream.GetFileType();
 

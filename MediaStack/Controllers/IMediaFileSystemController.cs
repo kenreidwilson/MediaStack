@@ -51,7 +51,7 @@ namespace MediaStackCore.Controllers
         /// </summary>
         /// <param name="stream">The stream.</param>
         /// <returns>System.String.</returns>
-        public string CalculateHash(FileStream stream);
+        public string CalculateHash(Stream stream);
 
         /// <summary>
         ///     Determines the type of the Media,
@@ -59,7 +59,7 @@ namespace MediaStackCore.Controllers
         /// </summary>
         /// <param name="stream">The stream.</param>
         /// <returns>System.Nullable&lt;MediaType&gt;.</returns>
-        public MediaType? DetermineMediaType(FileStream stream);
+        public MediaType? DetermineMediaType(Stream stream);
 
         /// <summary>
         ///     Returns a dynamic object where the properties of

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using AutoMapper;
@@ -7,11 +8,14 @@ using MediaStack_API.Models.Responses;
 using MediaStack_API.Models.ViewModels;
 using MediaStack_API.Services.Thumbnailer;
 using MediaStackCore.Controllers;
+using MediaStackCore.Data_Access_Layer;
 using MediaStackCore.Models;
 using MediaStackCore.Services.UnitOfWorkService;
 using Microsoft.AspNetCore.Cors;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.FileProviders;
 
 namespace MediaStack_API.Controllers
 {
@@ -183,6 +187,58 @@ namespace MediaStack_API.Controllers
                     return StatusCode(500);
                 }
             }
+        }
+
+        [HttpPost("Upload")]
+        public async Task<IActionResult> Upload(IFormFile file)
+        {
+            if (file == null)
+            {
+                return BadRequest(new BaseResponse(null, "No File"));
+            }
+            Media media = new Media();
+            try
+            {
+                using (var stream = file.OpenReadStream())
+                {
+                    media.Hash = this.FSController.CalculateHash(stream);
+                    stream.Position = 0;
+                    media.Type = this.FSController.DetermineMediaType(stream);
+                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                return StatusCode(500);
+            }
+
+            if (media.Type == null)
+            {
+                return BadRequest(new BaseResponse(null, "Invalid File Type"));
+            }
+
+            using (IUnitOfWork unitOfWork = this.UnitOfWorkService.Create())
+            {
+                if (unitOfWork.Media.Get().Any(m => m.Hash == media.Hash))
+                {
+                    return BadRequest(new BaseResponse(null, "Duplicate"));
+                }
+
+                string filePath = $"{this.FSController.MediaDirectory}{media.Hash}";
+                while (System.IO.File.Exists(filePath))
+                {
+                    filePath += "_";
+                }
+
+                await using (var stream = new FileStream(filePath, FileMode.Create))
+                {
+                    await file.CopyToAsync(stream);
+                }
+                unitOfWork.Media.Insert(media);
+                unitOfWork.Save();
+            }
+
+            return Ok(media);
         }
 
         protected byte[] GetMediaImageBytes(Media media)
