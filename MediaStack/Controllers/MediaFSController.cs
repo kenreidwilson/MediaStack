@@ -55,7 +55,12 @@ namespace MediaStackCore.Controllers
 
         public string GetMediaFullPath(Media media)
         {
-            if (media != null && media.Path != null && Path.IsPathFullyQualified(media.Path))
+            if (media?.Path == null)
+            {
+                return null;
+            }
+
+            if (Path.IsPathFullyQualified(media.Path))
             {
                 return media.Path;
             }
