@@ -23,13 +23,6 @@ namespace MediaStackCore.Data_Access_Layer
 
             if (category == null)
             {
-                category = unitOfWork.Categories
-                                     .GetLocal()
-                                     .FirstOrDefault(c => c.Name == name);
-            }
-
-            if (category == null)
-            {
                 category = new Category { Name = name };
                 unitOfWork.Categories.Insert(category);
             }
@@ -45,13 +38,6 @@ namespace MediaStackCore.Data_Access_Layer
 
             if (artist == null)
             {
-                artist = unitOfWork.Artists
-                                   .GetLocal()
-                                   .FirstOrDefault(a => a.Name == name);
-            }
-
-            if (artist == null)
-            {
                 artist = new Artist { Name = name };
                 unitOfWork.Artists.Insert(artist);
             }
@@ -64,13 +50,6 @@ namespace MediaStackCore.Data_Access_Layer
             Album album = unitOfWork.Albums
                                     .Get()
                                     .FirstOrDefault(a => a.Name == name && a.ArtistID == artist.ID);
-
-            if (album == null)
-            {
-                album = unitOfWork.Albums
-                                  .GetLocal()
-                                  .FirstOrDefault(a => a.Name == name);
-            }
 
             if (album == null)
             {
