@@ -26,6 +26,15 @@ namespace MediaStack_Importer.Services
 
         #region Methods
 
+        protected string GetRelativePath(string path)
+        {
+            if (path == null)
+            {
+                return null;
+            }
+            return Path.IsPathFullyQualified(path) ? path.Replace(this.FSController.MediaDirectory, "") : path;
+        }
+
         protected Media CreateOrUpdateMediaFromFile(string filePath, IUnitOfWork unitOfWork, object unitOfWorkLock = null)
         {
             if (unitOfWorkLock == null)
@@ -33,15 +42,7 @@ namespace MediaStack_Importer.Services
                 unitOfWorkLock = new object();
             }
 
-            string relativePath = null;
-            if (Path.IsPathFullyQualified(filePath))
-            {
-                relativePath = filePath.Replace(this.FSController.MediaDirectory, "");
-            }
-            else
-            {
-                relativePath = filePath;
-            }
+            string relativePath = this.GetRelativePath(filePath);
 
             Media media = null;
             using (var stream = File.OpenRead(filePath))
@@ -64,11 +65,6 @@ namespace MediaStack_Importer.Services
                     media = new Media {Path = relativePath, Hash = hash, Type = type};
                     lock (unitOfWorkLock)
                     {
-                        if (unitOfWork.Media.GetLocal().FirstOrDefault(m => m.Hash == hash) != null)
-                        {
-                            return null;
-                        }
-
                         unitOfWork.Media.Insert(media);
                     }
                 }
