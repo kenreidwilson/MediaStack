@@ -9,7 +9,7 @@ namespace MediaStack_Importer.Services.ScannerService.ScannerJobs
     {
         #region Data members
 
-        protected int BatchSize = 100;
+        protected int BatchSize = 500;
 
         protected readonly IDictionary<string, T> BatchedEntities;
 
@@ -32,15 +32,19 @@ namespace MediaStack_Importer.Services.ScannerService.ScannerJobs
 
         #region Methods
 
-        protected virtual void Execute(ICollection<string> data)
+        protected virtual void Execute(ICollection<object> data)
         {
             this.toProcess = data.Count;
             foreach (var aData in data)
             {
                 this.ExecuteProcess(aData);
             }
-            this.finishEvent.WaitOne();
-            this.Save();
+
+            if (data.Count != 0)
+            {
+                this.finishEvent.WaitOne();
+                this.Save();
+            }
         }
 
         protected virtual void ExecuteProcess(object data)

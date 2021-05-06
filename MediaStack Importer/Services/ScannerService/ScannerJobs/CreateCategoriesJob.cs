@@ -28,9 +28,9 @@ namespace MediaStack_Importer.Services.ScannerService.ScannerJobs
 
         #region Methods
 
-        protected void CreateCategories()
+        public void CreateCategories()
         {
-            Execute(Directory.GetFiles(this.FSController.MediaDirectory, "*", SearchOption.TopDirectoryOnly));
+            Execute(Directory.GetDirectories(this.FSController.MediaDirectory, "*", SearchOption.TopDirectoryOnly));
         }
 
         protected override void Save()
@@ -49,7 +49,7 @@ namespace MediaStack_Importer.Services.ScannerService.ScannerJobs
                 Category potentialCategory = this.getCategoryIfNotExists(categoryName);
                 if (potentialCategory != null)
                 {
-                    BatchedEntities[categoryPath] = this.getCategoryIfNotExists(categoryName);
+                    BatchedEntities[categoryPath] = potentialCategory;
                 }
             }
         }
@@ -61,7 +61,6 @@ namespace MediaStack_Importer.Services.ScannerService.ScannerJobs
             {
                 return new Category {Name = categoryName};
             }
-
             return null;
         }
 
