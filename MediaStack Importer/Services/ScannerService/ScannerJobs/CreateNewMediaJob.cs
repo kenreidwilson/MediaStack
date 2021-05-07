@@ -21,6 +21,7 @@ namespace MediaStack_Importer.Services.ScannerService.ScannerJobs
 
         public void CreateNewMedia()
         {
+            Logger.LogDebug("Creating New Media");
             var filePaths = Directory.GetFiles(FSController.MediaDirectory, "*", SearchOption.AllDirectories);
             Execute(filePaths);
         }
@@ -29,7 +30,7 @@ namespace MediaStack_Importer.Services.ScannerService.ScannerJobs
         {
             using (var unitOfWork = UnitOfWorkService.Create())
             {
-                Logger.LogDebug("Saving Media...");
+                Logger.LogDebug("Saving Media");
                 unitOfWork.Media.BulkInsert(
                     BatchedEntities.Values
                                    .Where(media => media.ID == 0 && !unitOfWork.Media
@@ -47,7 +48,7 @@ namespace MediaStack_Importer.Services.ScannerService.ScannerJobs
         {
             if (data is string mediaFilePath)
             {
-                Logger.LogDebug($"Processing {mediaFilePath}");
+                Logger.LogDebug($"Processing Media: {mediaFilePath}");
                 AddMedia(this.CreateMediaFromFileIfNotExists(mediaFilePath));
             }
         }

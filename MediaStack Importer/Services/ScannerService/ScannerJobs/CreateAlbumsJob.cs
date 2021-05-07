@@ -1,5 +1,4 @@
-﻿using System;
-using System.IO;
+﻿using System.IO;
 using System.Linq;
 using MediaStack_Importer.Utility;
 using MediaStackCore.Controllers;
@@ -21,7 +20,8 @@ namespace MediaStack_Importer.Services.ScannerService.ScannerJobs
 
         #region Constructors
 
-        public CreateAlbumsJob(ILogger logger, IMediaFileSystemController fsController, IUnitOfWorkService unitOfWorkService) : base(logger)
+        public CreateAlbumsJob(ILogger logger, IMediaFileSystemController fsController,
+            IUnitOfWorkService unitOfWorkService) : base(logger)
         {
             this.FSController = fsController;
             this.UnitOfWorkService = unitOfWorkService;
@@ -33,6 +33,7 @@ namespace MediaStack_Importer.Services.ScannerService.ScannerJobs
 
         public void CreateAlbums()
         {
+            this.Logger.LogDebug("Creating Albums");
             Execute(IOUtilities.GetDirectoriesAtLevel(this.FSController.MediaDirectory, 1));
         }
 
@@ -41,11 +42,13 @@ namespace MediaStack_Importer.Services.ScannerService.ScannerJobs
             using var unitOfWork = this.UnitOfWorkService.Create();
             if (data is DirectoryInfo artistDirectory)
             {
+                this.Logger.LogDebug($"Processing {artistDirectory.Name}'s: Albums");
                 var potentialArtist = unitOfWork.Artists.Get().FirstOrDefault(a => a.Name == artistDirectory.Name);
                 if (potentialArtist != null)
                 {
                     foreach (var albumName in artistDirectory.GetDirectories().Select(d => d.Name))
                     {
+                        this.Logger.LogDebug($"Processing Album: {albumName}");
                         var key = $"{potentialArtist.Name}{Path.DirectorySeparatorChar}{albumName}";
                         var potentialAlbum = this.getAlbumIfNotExists(potentialArtist, albumName);
                         if (potentialAlbum != null)
@@ -56,13 +59,14 @@ namespace MediaStack_Importer.Services.ScannerService.ScannerJobs
                 }
                 else
                 {
-                    Console.WriteLine($"Could not find artist {artistDirectory.Name}");
+                    Logger.LogWarning($"Could not find Artist: {artistDirectory.Name}");
                 }
             }
         }
 
         protected override void Save()
         {
+            this.Logger.LogDebug("Saving Albums");
             using var unitOfWork = this.UnitOfWorkService.Create();
             unitOfWork.Albums.BulkInsert(BatchedEntities.Values.ToList());
             unitOfWork.Save();
