@@ -5,6 +5,7 @@ using MediaStack_Importer.Utility;
 using MediaStackCore.Controllers;
 using MediaStackCore.Models;
 using MediaStackCore.Services.UnitOfWorkService;
+using Microsoft.Extensions.Logging;
 
 namespace MediaStack_Importer.Services.ScannerService.ScannerJobs
 {
@@ -20,7 +21,7 @@ namespace MediaStack_Importer.Services.ScannerService.ScannerJobs
 
         #region Constructors
 
-        public CreateAlbumsJob(IMediaFileSystemController fsController, IUnitOfWorkService unitOfWorkService)
+        public CreateAlbumsJob(ILogger logger, IMediaFileSystemController fsController, IUnitOfWorkService unitOfWorkService) : base(logger)
         {
             this.FSController = fsController;
             this.UnitOfWorkService = unitOfWorkService;
@@ -46,7 +47,11 @@ namespace MediaStack_Importer.Services.ScannerService.ScannerJobs
                     foreach (var albumName in artistDirectory.GetDirectories().Select(d => d.Name))
                     {
                         var key = $"{potentialArtist.Name}{Path.DirectorySeparatorChar}{albumName}";
-                        BatchedEntities[key] = this.getAlbumIfNotExists(potentialArtist, albumName);
+                        var potentialAlbum = this.getAlbumIfNotExists(potentialArtist, albumName);
+                        if (potentialAlbum != null)
+                        {
+                            BatchedEntities[key] = potentialAlbum;
+                        }
                     }
                 }
                 else

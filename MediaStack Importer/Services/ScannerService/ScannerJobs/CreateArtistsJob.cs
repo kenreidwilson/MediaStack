@@ -3,6 +3,7 @@ using MediaStack_Importer.Utility;
 using MediaStackCore.Controllers;
 using MediaStackCore.Models;
 using MediaStackCore.Services.UnitOfWorkService;
+using Microsoft.Extensions.Logging;
 
 namespace MediaStack_Importer.Services.ScannerService.ScannerJobs
 {
@@ -18,7 +19,7 @@ namespace MediaStack_Importer.Services.ScannerService.ScannerJobs
 
         #region Constructors
 
-        public CreateArtistsJob(IMediaFileSystemController fsController, IUnitOfWorkService unitOfWorkService)
+        public CreateArtistsJob(ILogger logger, IMediaFileSystemController fsController, IUnitOfWorkService unitOfWorkService) : base (logger)
         {
             this.FSController = fsController;
             this.UnitOfWorkService = unitOfWorkService;

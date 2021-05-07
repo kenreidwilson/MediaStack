@@ -7,6 +7,7 @@ using MediaStackCore.Controllers;
 using MediaStackCore.Data_Access_Layer;
 using MediaStackCore.Models;
 using MediaStackCore.Services.UnitOfWorkService;
+using Microsoft.Extensions.Logging;
 
 namespace MediaStack_Importer.Services.ScannerService.ScannerJobs
 {
@@ -28,7 +29,7 @@ namespace MediaStack_Importer.Services.ScannerService.ScannerJobs
 
         #region Constructors
 
-        protected MediaScannerJob(IMediaFileSystemController fsController, IUnitOfWorkService unitOfWorkService)
+        protected MediaScannerJob(ILogger logger, IMediaFileSystemController fsController, IUnitOfWorkService unitOfWorkService) : base(logger)
         {
             this.FSController = fsController;
             this.UnitOfWorkService = unitOfWorkService;
@@ -51,6 +52,7 @@ namespace MediaStack_Importer.Services.ScannerService.ScannerJobs
             }
             catch (DuplicateMediaException)
             {
+                this.Logger.LogWarning($"Duplicate file: {filePath}");
                 var fileHash = this.GetFileHash(this.FSController.GetMediaFullPath(media));
                 media = unitOfWork.Media.Get().FirstOrDefault(m => m.Hash == fileHash);
                 if (media != null)
@@ -59,9 +61,13 @@ namespace MediaStack_Importer.Services.ScannerService.ScannerJobs
                     return media;
                 }
             }
-            catch (Exception)
+            catch (TypeNotRecognizedException)
             {
-                return null;
+                this.Logger.LogWarning($"Could not determine type for: {filePath}");
+            }
+            catch (Exception e)
+            {
+                this.Logger.LogError(e.ToString());
             }
 
             this.FindAndSetMediaReferences(unitOfWork, filePath, media);

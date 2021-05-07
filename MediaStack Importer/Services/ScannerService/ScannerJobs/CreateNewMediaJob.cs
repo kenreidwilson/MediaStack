@@ -3,6 +3,7 @@ using System.Linq;
 using MediaStackCore.Controllers;
 using MediaStackCore.Models;
 using MediaStackCore.Services.UnitOfWorkService;
+using Microsoft.Extensions.Logging;
 
 namespace MediaStack_Importer.Services.ScannerService.ScannerJobs
 {
@@ -10,8 +11,8 @@ namespace MediaStack_Importer.Services.ScannerService.ScannerJobs
     {
         #region Constructors
 
-        public CreateNewMediaJob(IMediaFileSystemController fsController, IUnitOfWorkService unitOfWorkService)
-            : base(fsController, unitOfWorkService) { }
+        public CreateNewMediaJob(ILogger logger, IMediaFileSystemController fsController, IUnitOfWorkService unitOfWorkService)
+            : base(logger, fsController, unitOfWorkService) { }
 
         #endregion
 

@@ -3,12 +3,15 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using Microsoft.Extensions.Logging;
 
 namespace MediaStack_Importer.Services.ScannerService.ScannerJobs
 {
     public abstract class BatchScannerJob<T> : IDisposable
     {
         #region Data members
+
+        protected ILogger Logger;
 
         protected int BatchSize = 500;
 
@@ -24,8 +27,9 @@ namespace MediaStack_Importer.Services.ScannerService.ScannerJobs
 
         #region Constructors
 
-        protected BatchScannerJob()
+        protected BatchScannerJob(ILogger logger)
         {
+            this.Logger = logger;
             this.BatchedEntities = new ConcurrentDictionary<object, T>();
         }
 
@@ -65,7 +69,7 @@ namespace MediaStack_Importer.Services.ScannerService.ScannerJobs
                 }
                 catch (Exception e)
                 {
-                    Console.WriteLine(e);
+                    this.Logger.LogError(e.ToString());
                 }
                 finally
                 {

@@ -3,6 +3,7 @@ using MediaStack_Importer.Services.MonitorService;
 using MediaStack_Importer.Services.ScannerService;
 using MediaStackCore.Controllers;
 using MediaStackCore.Services.UnitOfWorkService;
+using Microsoft.Extensions.Logging;
 
 namespace MediaStack_Importer.Importer
 {
@@ -10,6 +11,7 @@ namespace MediaStack_Importer.Importer
     {
         #region Data members
 
+        protected ILogger Logger;
         protected IUnitOfWorkService UnitOfWorkService;
         protected IMediaFileSystemController FSController;
 
@@ -20,11 +22,12 @@ namespace MediaStack_Importer.Importer
 
         #region Constructors
 
-        public MediaImporter(IMediaFileSystemController fsController, IUnitOfWorkService unitOfWorkService)
+        public MediaImporter(ILogger logger, IMediaFileSystemController fsController, IUnitOfWorkService unitOfWorkService)
         {
+            this.Logger = logger;
             this.FSController = fsController;
             this.UnitOfWorkService = unitOfWorkService;
-            this.scanner = new MediaScanner(this.FSController, this.UnitOfWorkService);
+            this.scanner = new MediaScanner(this.Logger, this.FSController, this.UnitOfWorkService);
             this.monitor = new MediaMonitor(this.FSController, this.UnitOfWorkService);
         }
 

@@ -7,6 +7,7 @@ using MediaStackCore.Controllers;
 using MediaStackCore.Data_Access_Layer;
 using MediaStackCore.Services.UnitOfWorkService;
 using MediaStackCore.Utility;
+using Microsoft.Extensions.Logging;
 
 namespace MediaStack_Importer
 {
@@ -16,7 +17,14 @@ namespace MediaStack_Importer
         {
             new MediaStackContext();
             EnvParser.ParseEnvFromFile($@"{Environment.CurrentDirectory}{Path.DirectorySeparatorChar}.env");
-            MediaImporter i = new MediaImporter(new MediaFSController(), new UnitOfWorkService());
+            var loggerFactory = LoggerFactory.Create(builder =>
+            {
+                builder
+                    .AddFilter("Microsoft", LogLevel.Warning)
+                    .AddFilter("System", LogLevel.Warning)
+                    .AddConsole();
+            });
+            MediaImporter i = new MediaImporter(loggerFactory.CreateLogger<MediaImporter>(), new MediaFSController(), new UnitOfWorkService());
             await i.Start();
 
             /*

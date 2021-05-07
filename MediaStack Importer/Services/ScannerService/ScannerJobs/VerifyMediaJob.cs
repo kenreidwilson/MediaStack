@@ -4,6 +4,7 @@ using MediaStackCore.Controllers;
 using MediaStackCore.Data_Access_Layer;
 using MediaStackCore.Models;
 using MediaStackCore.Services.UnitOfWorkService;
+using Microsoft.Extensions.Logging;
 
 namespace MediaStack_Importer.Services.ScannerService.ScannerJobs
 {
@@ -11,8 +12,8 @@ namespace MediaStack_Importer.Services.ScannerService.ScannerJobs
     {
         #region Constructors
 
-        public VerifyMediaJob(IMediaFileSystemController fsController, IUnitOfWorkService unitOfWorkService)
-            : base(fsController, unitOfWorkService) { }
+        public VerifyMediaJob(ILogger logger, IMediaFileSystemController fsController, IUnitOfWorkService unitOfWorkService)
+            : base(logger, fsController, unitOfWorkService) { }
 
         #endregion
 
