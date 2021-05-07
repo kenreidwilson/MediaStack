@@ -11,7 +11,8 @@ namespace MediaStack_Importer.Services.ScannerService.ScannerJobs
     {
         #region Constructors
 
-        public CreateNewMediaJob(ILogger logger, IMediaFileSystemController fsController, IUnitOfWorkService unitOfWorkService)
+        public CreateNewMediaJob(ILogger logger, IMediaFileSystemController fsController,
+            IUnitOfWorkService unitOfWorkService)
             : base(logger, fsController, unitOfWorkService) { }
 
         #endregion
@@ -28,6 +29,7 @@ namespace MediaStack_Importer.Services.ScannerService.ScannerJobs
         {
             using (var unitOfWork = UnitOfWorkService.Create())
             {
+                Logger.LogDebug("Saving Media...");
                 unitOfWork.Media.BulkInsert(
                     BatchedEntities.Values
                                    .Where(media => media.ID == 0 && !unitOfWork.Media
@@ -37,12 +39,15 @@ namespace MediaStack_Importer.Services.ScannerService.ScannerJobs
                 unitOfWork.Media.BulkUpdate(BatchedEntities.Values.Where(m => m.ID != 0).ToList());
                 unitOfWork.Save();
             }
+
+            BatchedEntities.Clear();
         }
 
         protected override void ProcessData(object data)
         {
             if (data is string mediaFilePath)
             {
+                Logger.LogDebug($"Processing {mediaFilePath}");
                 AddMedia(this.CreateMediaFromFileIfNotExists(mediaFilePath));
             }
         }

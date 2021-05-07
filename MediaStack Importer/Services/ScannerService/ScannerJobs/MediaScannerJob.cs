@@ -29,7 +29,8 @@ namespace MediaStack_Importer.Services.ScannerService.ScannerJobs
 
         #region Constructors
 
-        protected MediaScannerJob(ILogger logger, IMediaFileSystemController fsController, IUnitOfWorkService unitOfWorkService) : base(logger)
+        protected MediaScannerJob(ILogger logger, IMediaFileSystemController fsController,
+            IUnitOfWorkService unitOfWorkService) : base(logger)
         {
             this.FSController = fsController;
             this.UnitOfWorkService = unitOfWorkService;
@@ -52,7 +53,7 @@ namespace MediaStack_Importer.Services.ScannerService.ScannerJobs
             }
             catch (DuplicateMediaException)
             {
-                this.Logger.LogWarning($"Duplicate file: {filePath}");
+                Logger.LogWarning($"Duplicate file: {filePath}");
                 var fileHash = this.GetFileHash(this.FSController.GetMediaFullPath(media));
                 media = unitOfWork.Media.Get().FirstOrDefault(m => m.Hash == fileHash);
                 if (media != null)
@@ -63,11 +64,11 @@ namespace MediaStack_Importer.Services.ScannerService.ScannerJobs
             }
             catch (TypeNotRecognizedException)
             {
-                this.Logger.LogWarning($"Could not determine type for: {filePath}");
+                Logger.LogWarning($"Invalid type: {filePath}");
             }
             catch (Exception e)
             {
-                this.Logger.LogError(e.ToString());
+                Logger.LogError(e.ToString());
             }
 
             this.FindAndSetMediaReferences(unitOfWork, filePath, media);
@@ -132,7 +133,7 @@ namespace MediaStack_Importer.Services.ScannerService.ScannerJobs
 
         protected void AddMedia(Media media)
         {
-            if (media == null)
+            if (media?.Hash == null)
             {
                 return;
             }

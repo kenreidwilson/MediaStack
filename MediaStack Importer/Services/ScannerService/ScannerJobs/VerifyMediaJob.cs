@@ -12,7 +12,8 @@ namespace MediaStack_Importer.Services.ScannerService.ScannerJobs
     {
         #region Constructors
 
-        public VerifyMediaJob(ILogger logger, IMediaFileSystemController fsController, IUnitOfWorkService unitOfWorkService)
+        public VerifyMediaJob(ILogger logger, IMediaFileSystemController fsController,
+            IUnitOfWorkService unitOfWorkService)
             : base(logger, fsController, unitOfWorkService) { }
 
         #endregion
@@ -22,7 +23,7 @@ namespace MediaStack_Importer.Services.ScannerService.ScannerJobs
         public void VerifyAllMedia()
         {
             using var unitOfWork = UnitOfWorkService.Create();
-            this.Execute(unitOfWork.Media.Get(m => m.Path != null).ToList());
+            Execute(unitOfWork.Media.Get(m => m.Path != null).ToList());
         }
 
         protected override void Save()
@@ -38,6 +39,8 @@ namespace MediaStack_Importer.Services.ScannerService.ScannerJobs
                 unitOfWork.Media.BulkUpdate(BatchedEntities.Values.Where(m => m.ID != 0).ToList());
                 unitOfWork.Save();
             }
+
+            BatchedEntities.Clear();
         }
 
         protected override void ProcessData(object data)
