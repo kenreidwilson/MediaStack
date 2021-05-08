@@ -1,39 +1,34 @@
 ﻿using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
 using MediaStackCore.Controllers;
 using MediaStackCore.Data_Access_Layer;
 using MediaStackCore.Models;
-using MediaStackCore.Services.UnitOfWorkService;
 using Microsoft.Extensions.Logging;
 
-namespace MediaStack_Importer.Services.ScannerService.ScannerJobs
+namespace MediaStack_Importer.Controllers
 {
-    public abstract class MediaScannerJob : BatchScannerJob<Media>
+    public class MediaFileSystemHelper : MediaFSController, IMediaFileSystemHelper
     {
         #region Data members
 
-        protected IUnitOfWorkService UnitOfWorkService;
-
-        protected IMediaFileSystemController FSController;
+        protected ILogger Logger;
 
         #endregion
 
         #region Properties
 
-        public IDictionary<string, string> HashCache { get; set; }
+        protected IDictionary<string, string> HashCache { get; }
 
         #endregion
 
         #region Constructors
 
-        protected MediaScannerJob(ILogger logger, IMediaFileSystemController fsController,
-            IUnitOfWorkService unitOfWorkService) : base(logger)
+        public MediaFileSystemHelper(ILogger logger)
         {
-            this.FSController = fsController;
-            this.UnitOfWorkService = unitOfWorkService;
+            this.Logger = logger;
             this.HashCache = new ConcurrentDictionary<string, string>();
         }
 
@@ -41,7 +36,7 @@ namespace MediaStack_Importer.Services.ScannerService.ScannerJobs
 
         #region Methods
 
-        protected Media CreateMediaFromFile(string filePath, IUnitOfWork unitOfWork)
+        public Media CreateMediaFromFile(string filePath, IUnitOfWork unitOfWork)
         {
             var media = new Media {
                 Path = this.GetRelativePath(filePath)
@@ -53,8 +48,8 @@ namespace MediaStack_Importer.Services.ScannerService.ScannerJobs
             }
             catch (DuplicateMediaException)
             {
-                Logger.LogWarning($"Duplicate file: {filePath}");
-                var fileHash = this.GetFileHash(this.FSController.GetMediaFullPath(media));
+                this.Logger.LogWarning($"Duplicate file: {filePath}");
+                var fileHash = this.GetFileHash(this.GetMediaFullPath(media));
                 media = unitOfWork.Media.Get().FirstOrDefault(m => m.Hash == fileHash);
                 if (media != null)
                 {
@@ -64,11 +59,11 @@ namespace MediaStack_Importer.Services.ScannerService.ScannerJobs
             }
             catch (TypeNotRecognizedException)
             {
-                Logger.LogWarning($"Invalid type: {filePath}");
+                this.Logger.LogWarning($"Invalid type: {filePath}");
             }
             catch (Exception e)
             {
-                Logger.LogError(e.ToString());
+                this.Logger.LogError(e.ToString());
             }
 
             this.FindAndSetMediaReferences(unitOfWork, filePath, media);
@@ -76,11 +71,34 @@ namespace MediaStack_Importer.Services.ScannerService.ScannerJobs
             return media;
         }
 
+        public string GetFileHash(string filePath, FileStream stream = null)
+        {
+            if (!this.HashCache.ContainsKey(this.GetRelativePath(filePath)))
+            {
+                using (stream ??= File.OpenRead(filePath))
+                {
+                    this.HashCache[this.GetRelativePath(filePath)] = this.CalculateHash(stream);
+                }
+            }
+
+            return this.HashCache[this.GetRelativePath(filePath)];
+        }
+
+        public string GetRelativePath(string path)
+        {
+            if (path == null)
+            {
+                return null;
+            }
+
+            return Path.IsPathFullyQualified(path) ? path.Replace(this.MediaDirectory, "") : path;
+        }
+
         protected void FindAndSetMediaTypeAndHash(IUnitOfWork unitOfWork, string filePath, Media media)
         {
             using (var stream = File.OpenRead(filePath))
             {
-                media.Type = this.FSController.DetermineMediaType(stream);
+                media.Type = this.DetermineMediaType(stream);
                 if (media.Type == null)
                 {
                     throw new TypeNotRecognizedException();
@@ -97,7 +115,7 @@ namespace MediaStack_Importer.Services.ScannerService.ScannerJobs
 
         protected void FindAndSetMediaReferences(IUnitOfWork unitOfWork, string filePath, Media media)
         {
-            var mediaReferences = this.FSController.DeriveMediaReferences(filePath);
+            var mediaReferences = this.DeriveMediaReferences(filePath);
 
             if (mediaReferences.Category != null)
             {
@@ -118,45 +136,9 @@ namespace MediaStack_Importer.Services.ScannerService.ScannerJobs
             }
         }
 
-        protected string GetFileHash(string filePath, FileStream stream = null)
-        {
-            if (!this.HashCache.ContainsKey(this.GetRelativePath(filePath)))
-            {
-                using (stream ??= File.OpenRead(filePath))
-                {
-                    this.HashCache[this.GetRelativePath(filePath)] = this.FSController.CalculateHash(stream);
-                }
-            }
+        public class DuplicateMediaException : Exception { }
 
-            return this.HashCache[this.GetRelativePath(filePath)];
-        }
-
-        protected void AddMedia(Media media)
-        {
-            if (media?.Hash == null)
-            {
-                return;
-            }
-
-            if (!BatchedEntities.ContainsKey(media.Hash))
-            {
-                BatchedEntities[media.Hash] = media;
-            }
-        }
-
-        protected string GetRelativePath(string path)
-        {
-            if (path == null)
-            {
-                return null;
-            }
-
-            return Path.IsPathFullyQualified(path) ? path.Replace(this.FSController.MediaDirectory, "") : path;
-        }
-
-        protected class DuplicateMediaException : Exception { }
-
-        protected class TypeNotRecognizedException : Exception { }
+        public class TypeNotRecognizedException : Exception { }
 
         #endregion
     }

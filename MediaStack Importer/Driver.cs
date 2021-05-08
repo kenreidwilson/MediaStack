@@ -1,8 +1,8 @@
 ﻿using System;
 using System.IO;
 using System.Threading.Tasks;
+using MediaStack_Importer.Controllers;
 using MediaStack_Importer.Importer;
-using MediaStackCore.Controllers;
 using MediaStackCore.Data_Access_Layer;
 using MediaStackCore.Services.UnitOfWorkService;
 using MediaStackCore.Utility;
@@ -26,9 +26,11 @@ namespace MediaStack_Importer
                     .AddConsole();
             });
 
+            var logger = loggerFactory.CreateLogger<Driver>();
+
             await new MediaImporter(
-                loggerFactory.CreateLogger<Driver>(),
-                new MediaFSController(),
+                logger,
+                new MediaFileSystemHelper(logger),
                 new UnitOfWorkService()
             ).Start();
         }

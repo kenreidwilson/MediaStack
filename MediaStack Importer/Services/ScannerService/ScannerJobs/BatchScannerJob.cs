@@ -37,15 +37,19 @@ namespace MediaStack_Importer.Services.ScannerService.ScannerJobs
 
         #region Methods
 
+        public abstract void Run();
+
         protected virtual void Execute(IEnumerable<object> data)
         {
             this.toProcess = data.Count();
+            bool shouldWait = this.toProcess > 0;
+
             foreach (var aData in data)
             {
                 this.ExecuteProcess(aData);
             }
 
-            if (data.Any())
+            if (shouldWait)
             {
                 this.finishEvent.WaitOne();
                 this.Save();

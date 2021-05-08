@@ -1,34 +1,45 @@
 ﻿using System.IO;
 using System.Linq;
-using MediaStackCore.Controllers;
+using MediaStack_Importer.Controllers;
 using MediaStackCore.Models;
 using MediaStackCore.Services.UnitOfWorkService;
 using Microsoft.Extensions.Logging;
 
 namespace MediaStack_Importer.Services.ScannerService.ScannerJobs
 {
-    public class CreateNewMediaJob : MediaScannerJob
+    public class CreateNewMediaJob : BatchScannerJob<Media>
     {
+        #region Data members
+
+        protected IUnitOfWorkService UnitOfWorkService;
+
+        protected IMediaFileSystemHelper MediaFSHelper;
+
+        #endregion
+
         #region Constructors
 
-        public CreateNewMediaJob(ILogger logger, IMediaFileSystemController fsController,
-            IUnitOfWorkService unitOfWorkService)
-            : base(logger, fsController, unitOfWorkService) { }
+        public CreateNewMediaJob(ILogger logger, IUnitOfWorkService unitOfWorkService,
+            IMediaFileSystemHelper fsHelper) : base(logger)
+        {
+            this.UnitOfWorkService = unitOfWorkService;
+            this.MediaFSHelper = fsHelper;
+        }
 
         #endregion
 
         #region Methods
 
-        public void CreateNewMedia()
+        public override void Run()
         {
             Logger.LogDebug("Creating New Media");
-            var filePaths = Directory.GetFiles(FSController.MediaDirectory, "*", SearchOption.AllDirectories);
+            var filePaths = Directory.GetFiles(this.MediaFSHelper.MediaDirectory, "*", SearchOption.AllDirectories);
             Execute(filePaths);
         }
 
         protected override void Save()
         {
-            using (var unitOfWork = UnitOfWorkService.Create())
+            using (var unitOfWork = this.UnitOfWorkService.Create())
             {
                 Logger.LogDebug("Saving Media");
                 unitOfWork.Media.BulkInsert(
@@ -49,16 +60,29 @@ namespace MediaStack_Importer.Services.ScannerService.ScannerJobs
             if (data is string mediaFilePath)
             {
                 Logger.LogDebug($"Processing Media: {mediaFilePath}");
-                AddMedia(this.CreateMediaFromFileIfNotExists(mediaFilePath));
+                this.addMedia(this.CreateMediaFromFileIfNotExists(mediaFilePath));
             }
         }
 
         protected Media CreateMediaFromFileIfNotExists(string filePath)
         {
-            using var unitOfWork = UnitOfWorkService.Create();
-            return unitOfWork.Media.Get().Any(m => string.Equals(m.Path, GetRelativePath(filePath)))
+            using var unitOfWork = this.UnitOfWorkService.Create();
+            return unitOfWork.Media.Get().Any(m => string.Equals(m.Path, this.MediaFSHelper.GetRelativePath(filePath)))
                 ? null
-                : CreateMediaFromFile(filePath, unitOfWork);
+                : this.MediaFSHelper.CreateMediaFromFile(filePath, unitOfWork);
+        }
+
+        private void addMedia(Media media)
+        {
+            if (media?.Hash == null)
+            {
+                return;
+            }
+
+            if (!BatchedEntities.ContainsKey(media.Hash))
+            {
+                BatchedEntities[media.Hash] = media;
+            }
         }
 
         #endregion

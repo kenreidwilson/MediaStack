@@ -1,4 +1,5 @@
-﻿using MediaStack_Importer.Services.ScannerService.ScannerJobs;
+﻿using MediaStack_Importer.Controllers;
+using MediaStack_Importer.Services.ScannerService.ScannerJobs;
 using MediaStackCore.Controllers;
 using MediaStackCore.Services.UnitOfWorkService;
 using Microsoft.Extensions.Logging;
@@ -17,17 +18,18 @@ namespace MediaStack_Importer.Services.ScannerService
 
         protected IUnitOfWorkService UnitOfWorkService;
 
-        protected IMediaFileSystemController FSController;
+        protected IMediaFileSystemHelper MediaFSHelper;
+
 
         #endregion
 
         #region Constructors
 
-        public MediaScanner(ILogger logger, IMediaFileSystemController fsController, IUnitOfWorkService unitOfWorkService)
+        public MediaScanner(ILogger logger, IUnitOfWorkService unitOfWorkService, IMediaFileSystemHelper helper)
         {
             this.Logger = logger;
-            this.FSController = fsController;
             this.UnitOfWorkService = unitOfWorkService;
+            this.MediaFSHelper = helper;
         }
 
         #endregion
@@ -37,17 +39,13 @@ namespace MediaStack_Importer.Services.ScannerService
         public void Start()
         {
             this.Logger.LogInformation("Creating Media References");
-            new CreateCategoriesJob(this.Logger, this.FSController, this.UnitOfWorkService).CreateCategories();
-            new CreateArtistsJob(this.Logger, this.FSController, this.UnitOfWorkService).CreateArtists();
-            new CreateAlbumsJob(this.Logger, this.FSController, this.UnitOfWorkService).CreateAlbums();
+            new CreateCategoriesJob(this.Logger, this.UnitOfWorkService, this.MediaFSHelper).Run();
+            new CreateArtistsJob(this.Logger, this.UnitOfWorkService, this.MediaFSHelper).Run();
+            new CreateAlbumsJob(this.Logger, this.UnitOfWorkService, this.MediaFSHelper).Run();
             this.Logger.LogInformation("Searching for new Media...");
-            var nmJob = new CreateNewMediaJob(this.Logger, this.FSController, this.UnitOfWorkService);
-            nmJob.CreateNewMedia();
+            new CreateNewMediaJob(this.Logger, this.UnitOfWorkService, this.MediaFSHelper).Run();
             this.Logger.LogInformation("Verifying Media...");
-            var vmJob = new VerifyMediaJob(this.Logger, this.FSController, this.UnitOfWorkService) {
-                HashCache = nmJob.HashCache
-            };
-            vmJob.VerifyAllMedia();
+            new VerifyMediaJob(this.Logger,  this.UnitOfWorkService, this.MediaFSHelper).Run();
             this.Logger.LogInformation("Done");
         }
 

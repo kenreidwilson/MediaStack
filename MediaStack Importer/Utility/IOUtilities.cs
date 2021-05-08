@@ -8,7 +8,8 @@ namespace MediaStack_Importer.Utility
     {
         #region Methods
 
-        public static IEnumerable<DirectoryInfo> GetDirectoriesAtLevel(string path, int targetLevel, int currentLevel = 0)
+        public static IEnumerable<DirectoryInfo> GetDirectoriesAtLevel(string path, int targetLevel,
+            int currentLevel = 0)
         {
             var directoryNames = new List<DirectoryInfo>();
 

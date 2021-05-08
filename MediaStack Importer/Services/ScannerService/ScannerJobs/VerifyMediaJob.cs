@@ -1,6 +1,6 @@
 ﻿using System.IO;
 using System.Linq;
-using MediaStackCore.Controllers;
+using MediaStack_Importer.Controllers;
 using MediaStackCore.Data_Access_Layer;
 using MediaStackCore.Models;
 using MediaStackCore.Services.UnitOfWorkService;
@@ -8,27 +8,38 @@ using Microsoft.Extensions.Logging;
 
 namespace MediaStack_Importer.Services.ScannerService.ScannerJobs
 {
-    public class VerifyMediaJob : MediaScannerJob
+    public class VerifyMediaJob : BatchScannerJob<Media>
     {
+        #region Data members
+
+        protected IUnitOfWorkService UnitOfWorkService;
+
+        protected IMediaFileSystemHelper MediaFSHelper;
+
+        #endregion
+
         #region Constructors
 
-        public VerifyMediaJob(ILogger logger, IMediaFileSystemController fsController,
-            IUnitOfWorkService unitOfWorkService)
-            : base(logger, fsController, unitOfWorkService) { }
+        public VerifyMediaJob(ILogger logger, IUnitOfWorkService unitOfWorkService, IMediaFileSystemHelper helper)
+            : base(logger)
+        {
+            this.UnitOfWorkService = unitOfWorkService;
+            this.MediaFSHelper = helper;
+        }
 
         #endregion
 
         #region Methods
 
-        public void VerifyAllMedia()
+        public override void Run()
         {
-            using var unitOfWork = UnitOfWorkService.Create();
+            using var unitOfWork = this.UnitOfWorkService.Create();
             Execute(unitOfWork.Media.Get(m => m.Path != null).ToList());
         }
 
         protected override void Save()
         {
-            using (var unitOfWork = UnitOfWorkService.Create())
+            using (var unitOfWork = this.UnitOfWorkService.Create())
             {
                 unitOfWork.Media.BulkInsert(
                     BatchedEntities.Values
@@ -53,14 +64,14 @@ namespace MediaStack_Importer.Services.ScannerService.ScannerJobs
 
         protected Media VerifyMedia(Media media)
         {
-            using var unitOfWork = UnitOfWorkService.Create();
-            if (!File.Exists(FSController.GetMediaFullPath(media)))
+            using var unitOfWork = this.UnitOfWorkService.Create();
+            if (!File.Exists(this.MediaFSHelper.GetMediaFullPath(media)))
             {
                 unitOfWork.DisableMedia(media);
                 return media;
             }
 
-            var newHash = GetFileHash(FSController.GetMediaFullPath(media));
+            var newHash = this.MediaFSHelper.GetFileHash(this.MediaFSHelper.GetMediaFullPath(media));
             if (newHash != media.Hash)
             {
                 return this.HandleMediaHashChange(media, unitOfWork, newHash);
@@ -71,13 +82,13 @@ namespace MediaStack_Importer.Services.ScannerService.ScannerJobs
 
         protected Media HandleMediaHashChange(Media media, IUnitOfWork unitOfWork, string newHash)
         {
-            var path = FSController.GetMediaFullPath(media);
+            var path = this.MediaFSHelper.GetMediaFullPath(media);
             unitOfWork.DisableMedia(media);
-            AddMedia(media);
+            this.addMedia(media);
             var pMedia = unitOfWork.Media.Get().FirstOrDefault(m => m.Hash == newHash);
             if (pMedia == null)
             {
-                return CreateMediaFromFile(path, unitOfWork);
+                return this.MediaFSHelper.CreateMediaFromFile(path, unitOfWork);
             }
 
             return this.HandleMovedMedia(pMedia, path, unitOfWork);
@@ -85,8 +96,21 @@ namespace MediaStack_Importer.Services.ScannerService.ScannerJobs
 
         protected Media HandleMovedMedia(Media media, string newPath, IUnitOfWork unitOfWork)
         {
-            media.Path = GetRelativePath(newPath);
+            media.Path = this.MediaFSHelper.GetRelativePath(newPath);
             return media;
+        }
+
+        private void addMedia(Media media)
+        {
+            if (media?.Hash == null)
+            {
+                return;
+            }
+
+            if (!BatchedEntities.ContainsKey(media.Hash))
+            {
+                BatchedEntities[media.Hash] = media;
+            }
         }
 
         #endregion

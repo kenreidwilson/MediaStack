@@ -20,8 +20,8 @@ namespace MediaStack_Importer.Services.ScannerService.ScannerJobs
 
         #region Constructors
 
-        public CreateAlbumsJob(ILogger logger, IMediaFileSystemController fsController,
-            IUnitOfWorkService unitOfWorkService) : base(logger)
+        public CreateAlbumsJob(ILogger logger, IUnitOfWorkService unitOfWorkService, 
+            IMediaFileSystemController fsController) : base(logger)
         {
             this.FSController = fsController;
             this.UnitOfWorkService = unitOfWorkService;
@@ -31,7 +31,7 @@ namespace MediaStack_Importer.Services.ScannerService.ScannerJobs
 
         #region Methods
 
-        public void CreateAlbums()
+        public override void Run()
         {
             this.Logger.LogDebug("Creating Albums");
             Execute(IOUtilities.GetDirectoriesAtLevel(this.FSController.MediaDirectory, 1));

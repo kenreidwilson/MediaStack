@@ -19,7 +19,8 @@ namespace MediaStack_Importer.Services.ScannerService.ScannerJobs
 
         #region Constructors
 
-        public CreateArtistsJob(ILogger logger, IMediaFileSystemController fsController, IUnitOfWorkService unitOfWorkService) : base (logger)
+        public CreateArtistsJob(ILogger logger, IUnitOfWorkService unitOfWorkService,
+            IMediaFileSystemController fsController) : base(logger)
         {
             this.FSController = fsController;
             this.UnitOfWorkService = unitOfWorkService;
@@ -29,9 +30,9 @@ namespace MediaStack_Importer.Services.ScannerService.ScannerJobs
 
         #region Methods
 
-        public void CreateArtists()
+        public override void Run()
         {
-            this.Logger.LogDebug($"Creating Artists");
+            Logger.LogDebug("Creating Artists");
             Execute(IOUtilities.GetDirectoriesAtLevel(this.FSController.MediaDirectory, 1).Select(d => d.Name));
         }
 
@@ -39,7 +40,7 @@ namespace MediaStack_Importer.Services.ScannerService.ScannerJobs
         {
             if (data is string artistName)
             {
-                this.Logger.LogDebug($"Processing Artist: {artistName}");
+                Logger.LogDebug($"Processing Artist: {artistName}");
                 var potentialArtist = this.getArtistIfNotExists(artistName);
                 if (potentialArtist != null)
                 {
@@ -50,7 +51,7 @@ namespace MediaStack_Importer.Services.ScannerService.ScannerJobs
 
         protected override void Save()
         {
-            this.Logger.LogDebug($"Saving Artists");
+            Logger.LogDebug("Saving Artists");
             using var unitOfWork = this.UnitOfWorkService.Create();
             unitOfWork.Artists.BulkInsert(BatchedEntities.Values.ToList());
             unitOfWork.Save();

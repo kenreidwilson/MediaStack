@@ -19,7 +19,8 @@ namespace MediaStack_Importer.Services.ScannerService.ScannerJobs
 
         #region Constructors
 
-        public CreateCategoriesJob(ILogger logger, IMediaFileSystemController fsController, IUnitOfWorkService unitOfWorkService) : base(logger)
+        public CreateCategoriesJob(ILogger logger, IUnitOfWorkService unitOfWorkService,
+            IMediaFileSystemController fsController) : base(logger)
         {
             this.FSController = fsController;
             this.UnitOfWorkService = unitOfWorkService;
@@ -29,9 +30,9 @@ namespace MediaStack_Importer.Services.ScannerService.ScannerJobs
 
         #region Methods
 
-        public void CreateCategories()
+        public override void Run()
         {
-            this.Logger.LogDebug("Creating Categories");
+            Logger.LogDebug("Creating Categories");
             Execute(Directory.GetDirectories(this.FSController.MediaDirectory, "*", SearchOption.TopDirectoryOnly));
         }
 
@@ -40,8 +41,8 @@ namespace MediaStack_Importer.Services.ScannerService.ScannerJobs
             if (data is string categoryPath)
             {
                 var categoryName = categoryPath.Split(Path.DirectorySeparatorChar).Last();
-                this.Logger.LogDebug($"Processing Category: {categoryName}");
-                Category potentialCategory = this.getCategoryIfNotExists(categoryName);
+                Logger.LogDebug($"Processing Category: {categoryName}");
+                var potentialCategory = this.getCategoryIfNotExists(categoryName);
                 if (potentialCategory != null)
                 {
                     BatchedEntities[categoryName] = potentialCategory;
@@ -51,7 +52,7 @@ namespace MediaStack_Importer.Services.ScannerService.ScannerJobs
 
         protected override void Save()
         {
-            this.Logger.LogDebug("Saving Categories");
+            Logger.LogDebug("Saving Categories");
             using var unitOfWork = this.UnitOfWorkService.Create();
             unitOfWork.Categories.BulkInsert(BatchedEntities.Values.ToList());
             unitOfWork.Save();
@@ -65,6 +66,7 @@ namespace MediaStack_Importer.Services.ScannerService.ScannerJobs
             {
                 return new Category {Name = categoryName};
             }
+
             return null;
         }
 
