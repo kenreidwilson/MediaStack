@@ -58,7 +58,7 @@ namespace MediaStack_Importer.Services.ScannerService.ScannerJobs
         {
             if (data is Media media)
             {
-                this.VerifyMedia(media);
+                this.addMedia(this.VerifyMedia(media));
             }
         }
 
@@ -85,13 +85,13 @@ namespace MediaStack_Importer.Services.ScannerService.ScannerJobs
             var path = this.MediaFSHelper.GetMediaFullPath(media);
             unitOfWork.DisableMedia(media);
             this.addMedia(media);
-            var pMedia = unitOfWork.Media.Get().FirstOrDefault(m => m.Hash == newHash);
-            if (pMedia == null)
+            var otherMedia = unitOfWork.Media.Get().FirstOrDefault(m => m.Hash == newHash);
+            if (otherMedia == null)
             {
                 return this.MediaFSHelper.CreateMediaFromFile(path, unitOfWork);
             }
 
-            return this.HandleMovedMedia(pMedia, path, unitOfWork);
+            return this.HandleMovedMedia(otherMedia, path, unitOfWork);
         }
 
         protected Media HandleMovedMedia(Media media, string newPath, IUnitOfWork unitOfWork)
