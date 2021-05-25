@@ -1,20 +1,14 @@
-﻿namespace MediaStack_API.Models.Responses
+﻿using System.Collections.Generic;
+using MediaStack_API.Models.ViewModels;
+
+namespace MediaStack_API.Models.Responses
 {
     public class MediaSearchResponse : BaseResponse
     {
-        #region Properties
-
-        public int Offset { get; set; }
-
-        public int Count { get; set; }
-
-        public int Total { get; set; }
-
-        #endregion
-
         #region Constructors
 
-        public MediaSearchResponse(object data, string message = "") : base(data, message) { }
+        public MediaSearchResponse(IEnumerable<MediaViewModel> media, int offset, int count, int total, string message = "") 
+            : base(new {media, offset, count, total}, message) { }
 
         #endregion
     }

@@ -15,7 +15,6 @@ using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.FileProviders;
 
 namespace MediaStack_API.Controllers
 {
@@ -65,17 +64,13 @@ namespace MediaStack_API.Controllers
             {
                 var query = searchQuery.GetQuery(unitOfWork);
                 var total = query.Count();
-                var response = new MediaSearchResponse(await query
-                                                             .Include(m => m.Tags)
-                                                             .Skip(searchQuery.Offset)
-                                                             .Take(searchQuery.Count)
-                                                             .Select(m => this.Mapper.Map<MediaViewModel>(m))
-                                                             .ToListAsync()) {
-                    Offset = searchQuery.Offset,
-                    Count = searchQuery.Count,
-                    Total = total
-                };
-                return Ok(response);
+                var medias = await query
+                                     .Include(m => m.Tags)
+                                     .Skip(searchQuery.Offset)
+                                     .Take(searchQuery.Count)
+                                     .Select(m => this.Mapper.Map<MediaViewModel>(m))
+                                     .ToListAsync();
+                return Ok(new MediaSearchResponse(medias, searchQuery.Offset, searchQuery.Count, total));
             }
         }
 
@@ -243,17 +238,22 @@ namespace MediaStack_API.Controllers
 
         protected byte[] GetMediaImageBytes(Media media)
         {
-            return System.IO.File.ReadAllBytes(this.FSController.GetMediaFullPath(media));
+            return this.readFile(this.FSController.GetMediaFullPath(media));
         }
 
         protected byte[] GetMediaThumbnailBytes(Media media)
         {
-            return System.IO.File.ReadAllBytes(this.Thumbnailer.GetThumbnailFullPath(media));
+            return this.readFile(this.Thumbnailer.GetThumbnailFullPath(media));
         }
 
         protected byte[] GetDefaultThumbnailBytes()
         {
-            return System.IO.File.ReadAllBytes(this.Thumbnailer.GetDefaultThumbnailFullPath());
+            return this.readFile(this.Thumbnailer.GetDefaultThumbnailFullPath());
+        }
+
+        private byte[] readFile(string filePath)
+        {
+            return System.IO.File.ReadAllBytes(filePath);
         }
 
         #endregion
