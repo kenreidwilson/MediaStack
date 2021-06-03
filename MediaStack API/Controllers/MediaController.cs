@@ -143,7 +143,7 @@ namespace MediaStack_API.Controllers
 
                 try
                 {
-                    return File(this.GetMediaImageBytes(media), "image/png");
+                    return File(this.GetMediaImageBytes(media), media.Type == MediaType.Video ? "video/mp4" : "image/png");
                 }
                 catch (Exception)
                 {
@@ -153,7 +153,7 @@ namespace MediaStack_API.Controllers
         }
 
         [HttpGet("{id}/Thumbnail")]
-        public IActionResult Thumbnail(int id)
+        public async Task<IActionResult> Thumbnail(int id)
         {
             if (id == 0)
             {
@@ -170,7 +170,7 @@ namespace MediaStack_API.Controllers
 
                 try
                 {
-                    if (this.Thumbnailer.HasThumbnail(media) || this.Thumbnailer.CreateThumbnail(media))
+                    if (this.Thumbnailer.HasThumbnail(media) || await this.Thumbnailer.CreateThumbnail(media))
                     {
                         return File(this.GetMediaThumbnailBytes(media), "image/png");
                     }

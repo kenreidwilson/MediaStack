@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Drawing;
 using System.IO;
+using System.Threading.Tasks;
 using MediaStackCore.Controllers;
 using MediaStackCore.Models;
 using Xabe.FFmpeg;
@@ -12,6 +13,10 @@ namespace MediaStack_API.Services.Thumbnailer
         #region Properties
 
         public string ThumbnailDirectory { get; } = @$"{Environment.GetEnvironmentVariable("THUMBNAIL_DIRECTORY")}";
+
+        private readonly int thumbnailHeight = 150;
+
+        private readonly int thumbnailWidth = 125;
 
         IMediaFileSystemController FSController { get; }
 
@@ -26,6 +31,11 @@ namespace MediaStack_API.Services.Thumbnailer
                 throw new InvalidOperationException("Invalid Media Directory");
             }
 
+            if (Environment.GetEnvironmentVariable("FFMPEG") != null)
+            {
+                FFmpeg.SetExecutablesPath(Environment.GetEnvironmentVariable("FFMPEG"));
+            }
+
             if (this.ThumbnailDirectory[0] != Path.DirectorySeparatorChar)
             {
                 this.ThumbnailDirectory += Path.DirectorySeparatorChar;
@@ -36,7 +46,7 @@ namespace MediaStack_API.Services.Thumbnailer
 
         public bool HasThumbnail(Media media) => File.Exists(this.GetThumbnailFullPath(media));
 
-        public virtual bool CreateThumbnail(Media media)
+        public virtual async Task<bool> CreateThumbnail(Media media)
         {
             if (media.Path == null)
             {
@@ -55,7 +65,7 @@ namespace MediaStack_API.Services.Thumbnailer
                 case MediaType.Animated_Image:
                     return this.CreateThumbnailFromImage(media);
                 case MediaType.Video:
-                    return this.CreateThumbnailFromVideo(media);
+                    return await this.CreateThumbnailFromVideo(media);
                 default:
                     return false;
             }
@@ -76,7 +86,7 @@ namespace MediaStack_API.Services.Thumbnailer
             try
             {
                 var image = Image.FromFile(this.FSController.GetMediaFullPath(media));
-                var thumb = image.GetThumbnailImage(150, 125, () => false, IntPtr.Zero);
+                var thumb = image.GetThumbnailImage(this.thumbnailHeight, this.thumbnailWidth, () => false, IntPtr.Zero);
                 thumb.Save(this.DetermineThumbnailLocation(media));
                 return true;
             }
@@ -90,13 +100,18 @@ namespace MediaStack_API.Services.Thumbnailer
             }
         }
 
-        protected bool CreateThumbnailFromVideo(Media media)
+        protected async Task<bool> CreateThumbnailFromVideo(Media media)
         {
-            FFmpeg.Conversions.FromSnippet.Snapshot(
-                this.FSController.GetMediaFullPath(media),
-                this.DetermineThumbnailLocation(media),
-                TimeSpan.FromSeconds(0));
-            return true;
+            var result = FFmpeg.Conversions.New()
+                               .AddParameter($"-i \"{this.FSController.GetMediaFullPath(media)}\"")
+                               .AddParameter("-ss 00:00:01.000")
+                               .AddParameter("-vframes 1")
+                               .AddParameter("-f image2")
+                               .SetOutput(this.DetermineThumbnailLocation(media))
+                               .Start();
+
+            await result;
+            return result.IsCompletedSuccessfully;
         }
 
         protected string DetermineThumbnailLocation(Media media)
