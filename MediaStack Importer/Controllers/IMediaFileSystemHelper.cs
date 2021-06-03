@@ -11,6 +11,8 @@ namespace MediaStack_Importer.Controllers
 
         public Media CreateMediaFromFile(string filePath, IUnitOfWork unitOfWork);
 
+        public Media UpdateMediaFromFile(string filePath, IUnitOfWork unitOfWork);
+
         public string GetFileHash(string filePath, FileStream stream = null);
 
         public string GetRelativePath(string path);

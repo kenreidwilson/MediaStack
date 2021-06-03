@@ -60,16 +60,29 @@ namespace MediaStack_Importer.Services.ScannerService.ScannerJobs
             if (data is string mediaFilePath)
             {
                 Logger.LogDebug($"Processing Media: {mediaFilePath}");
-                this.addMedia(this.CreateMediaFromFileIfNotExists(mediaFilePath));
+                this.addMedia(this.CreateOrUpdateMediaFromFile(mediaFilePath));
             }
         }
 
-        protected Media CreateMediaFromFileIfNotExists(string filePath)
+        protected Media CreateOrUpdateMediaFromFile(string filePath)
         {
             using var unitOfWork = this.UnitOfWorkService.Create();
-            return unitOfWork.Media.Get().Any(m => string.Equals(m.Path, this.MediaFSHelper.GetRelativePath(filePath)))
-                ? null
-                : this.MediaFSHelper.CreateMediaFromFile(filePath, unitOfWork);
+
+            if (!unitOfWork.Media.Get().Any(m => string.Equals(m.Path, this.MediaFSHelper.GetRelativePath(filePath))))
+            {
+                string fileHash = this.MediaFSHelper.GetFileHash(filePath);
+                Media media = unitOfWork.Media.Get().FirstOrDefault(m => m.Hash == fileHash);
+                if (media == null)
+                {
+                    return this.MediaFSHelper.CreateMediaFromFile(filePath, unitOfWork);
+                }
+                else
+                {
+                    return this.MediaFSHelper.UpdateMediaFromFile(filePath, unitOfWork);
+                }
+            }
+
+            return null;
         }
 
         private void addMedia(Media media)

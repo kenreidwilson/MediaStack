@@ -1,9 +1,7 @@
 ﻿using MediaStack_Importer.Controllers;
 using MediaStack_Importer.Services.ScannerService.ScannerJobs;
-using MediaStackCore.Controllers;
 using MediaStackCore.Services.UnitOfWorkService;
 using Microsoft.Extensions.Logging;
-
 namespace MediaStack_Importer.Services.ScannerService
 {
     /// <summary>

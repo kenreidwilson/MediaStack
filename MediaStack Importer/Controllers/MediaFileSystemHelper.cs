@@ -46,17 +46,6 @@ namespace MediaStack_Importer.Controllers
             {
                 this.FindAndSetMediaTypeAndHash(unitOfWork, filePath, media);
             }
-            catch (DuplicateMediaException)
-            {
-                this.Logger.LogWarning($"Duplicate file: {filePath}");
-                var fileHash = this.GetFileHash(this.GetMediaFullPath(media));
-                media = unitOfWork.Media.Get().FirstOrDefault(m => m.Hash == fileHash);
-                if (media != null)
-                {
-                    media.Path = this.GetRelativePath(filePath);
-                    return media;
-                }
-            }
             catch (TypeNotRecognizedException)
             {
                 this.Logger.LogWarning($"Invalid type: {filePath}");
@@ -68,6 +57,22 @@ namespace MediaStack_Importer.Controllers
 
             this.FindAndSetMediaReferences(unitOfWork, filePath, media);
 
+            return media;
+        }
+
+        public Media UpdateMediaFromFile(string filePath, IUnitOfWork unitOfWork)
+        {
+            string mediaHash = this.GetFileHash(filePath);
+            Media media = unitOfWork.Media.Get().First(m => m.Hash == mediaHash);
+
+            if (File.Exists(GetMediaFullPath(media)))
+            {
+                this.Logger.LogWarning($"Duplicate Media Found: {media.Path}");
+                return null;
+            }
+
+            media.Path = this.GetRelativePath(filePath);
+            this.FindAndSetMediaReferences(unitOfWork, filePath, media);
             return media;
         }
 
@@ -116,6 +121,10 @@ namespace MediaStack_Importer.Controllers
         protected void FindAndSetMediaReferences(IUnitOfWork unitOfWork, string filePath, Media media)
         {
             var mediaReferences = this.DeriveMediaReferences(filePath);
+
+            media.CategoryID = null;
+            media.ArtistID = null;
+            media.AlbumID = null;
 
             if (mediaReferences.Category != null)
             {
