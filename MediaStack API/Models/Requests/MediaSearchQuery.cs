@@ -44,7 +44,7 @@ namespace MediaStack_API.Models.Requests
                 case SearchMode.AllMedia:
                     break;
                 case SearchMode.MediaAndAlbumCover:
-                    query = query.Where(m => m.AlbumID != null && m.AlbumOrder == 0);
+                    query = query.Where(m => m.AlbumID == null || (m.AlbumID != null && m.AlbumOrder == 0));
                     break;
                 case SearchMode.MediaNoAlbum:
                     query = query.Where(m => m.AlbumID == null);

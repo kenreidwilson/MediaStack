@@ -44,6 +44,8 @@ namespace MediaStack_Importer.Services.ScannerService
             new CreateNewMediaJob(this.Logger, this.UnitOfWorkService, this.MediaFSHelper).Run();
             this.Logger.LogInformation("Verifying Media...");
             new VerifyMediaJob(this.Logger,  this.UnitOfWorkService, this.MediaFSHelper).Run();
+            this.Logger.LogInformation("Organizing Albums...");
+            new OrganizeAlbumJob(this.Logger, this.UnitOfWorkService).Run();
             this.Logger.LogInformation("Done");
         }
 
