@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
-using EFCore.BulkExtensions;
 using Microsoft.EntityFrameworkCore;
 
 namespace MediaStackCore.Data_Access_Layer
@@ -22,7 +21,7 @@ namespace MediaStackCore.Data_Access_Layer
 
         public virtual void BulkInsert(IList<T> entities)
         {
-            this.context.BulkInsert(entities);
+            this.context.Set<T>().AddRange(entities);
         }
 
         public virtual IQueryable<T> Get(Expression<Func<T, bool>> expression = null)
@@ -37,7 +36,7 @@ namespace MediaStackCore.Data_Access_Layer
 
         public virtual void BulkUpdate(IList<T> entities)
         {
-            this.context.BulkUpdate(entities);
+            this.context.UpdateRange(entities);
         }
 
         public virtual void Delete(T entity)
