@@ -2,6 +2,7 @@
 using System.Drawing;
 using System.IO;
 using System.Threading.Tasks;
+using ImageMagick;
 using MediaStackCore.Controllers;
 using MediaStackCore.Models;
 using Xabe.FFmpeg;
@@ -85,13 +86,17 @@ namespace MediaStack_API.Services.Thumbnailer
         {
             try
             {
-                var image = Image.FromFile(this.FSController.GetMediaFullPath(media));
-                var thumb = image.GetThumbnailImage(this.thumbnailHeight, this.thumbnailWidth, () => false, IntPtr.Zero);
-                thumb.Save(this.DetermineThumbnailLocation(media));
+                var file = new FileInfo(this.FSController.GetMediaFullPath(media));
+                using (MagickImage image = new MagickImage(file))
+                {
+                    image.Thumbnail(new MagickGeometry(this.thumbnailWidth, this.thumbnailHeight));
+                    image.Write(this.DetermineThumbnailLocation(media));
+                }
                 return true;
             }
             catch (OutOfMemoryException)
             {
+                Console.WriteLine("");
                 return false;
             }
             catch (IOException)
