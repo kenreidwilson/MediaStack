@@ -68,7 +68,7 @@ namespace MediaStack_Importer.Services.ScannerService.ScannerJobs
         {
             using var unitOfWork = this.UnitOfWorkService.Create();
 
-            if (!unitOfWork.Media.Get().Any(m => string.Equals(m.Path, this.MediaFSHelper.GetRelativePath(filePath))))
+            if (!unitOfWork.Media.Get().Any(m => m.Path == this.MediaFSHelper.GetRelativePath(filePath)))
             {
                 string fileHash = this.MediaFSHelper.GetFileHash(filePath);
                 Media media = unitOfWork.Media.Get().FirstOrDefault(m => m.Hash == fileHash);
@@ -76,10 +76,7 @@ namespace MediaStack_Importer.Services.ScannerService.ScannerJobs
                 {
                     return this.MediaFSHelper.CreateMediaFromFile(filePath, unitOfWork);
                 }
-                else
-                {
-                    return this.MediaFSHelper.UpdateMediaFromFile(filePath, unitOfWork);
-                }
+                return this.MediaFSHelper.UpdateMediaFromFile(filePath, unitOfWork);
             }
 
             return null;

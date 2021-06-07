@@ -25,7 +25,7 @@ namespace MediaStackCore.Controllers
                 throw new InvalidOperationException("Invalid Media Directory");
             }
 
-            if (this.MediaDirectory[0] != Path.DirectorySeparatorChar)
+            if (this.MediaDirectory.Last() != Path.DirectorySeparatorChar)
             {
                 this.MediaDirectory += Path.DirectorySeparatorChar;
             }
