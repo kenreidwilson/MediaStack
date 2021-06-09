@@ -5,6 +5,7 @@ using MediaStack_API.Models.Responses;
 using MediaStack_API.Models.ViewModels;
 using MediaStackCore.Models;
 using MediaStackCore.Services.UnitOfWorkService;
+using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -78,6 +79,52 @@ namespace MediaStack_API.Controllers
                 }
 
                 return Ok(new BaseResponse(this.Mapper.Map<TagViewModel>(tag)));
+            }
+        }
+
+        [EnableCors("_myAllowSpecificOrigins")]
+        [HttpPut("{id}")]
+        public IActionResult Update(int id, [FromBody] TagViewModel tag)
+        {
+            using (var unitOfWork = this.UnitOfWorkService.Create())
+            {
+                var tagModel = unitOfWork.Tags
+                                    .Get()
+                                    .FirstOrDefault(t => t.ID == id);
+
+                if (tagModel == null || unitOfWork.Tags.Get().Any(t => t.Name == tag.Name))
+                {
+                    return BadRequest();
+                }
+
+                tagModel.Name = tag.Name;
+
+                unitOfWork.Tags.Update(tagModel);
+                unitOfWork.Save();
+
+                return Ok(new BaseResponse(this.Mapper.Map<TagViewModel>(tagModel)));
+            }
+        }
+
+        [EnableCors("_myAllowSpecificOrigins")]
+        [HttpDelete("{id}")]
+        public IActionResult Delete(int id)
+        {
+            using (var unitOfWork = this.UnitOfWorkService.Create())
+            {
+                var tag = unitOfWork.Tags
+                                         .Get()
+                                         .FirstOrDefault(t => t.ID == id);
+
+                if (tag == null)
+                {
+                    return BadRequest();
+                }
+
+                unitOfWork.Tags.Delete(tag);
+                unitOfWork.Save();
+
+                return Ok();
             }
         }
 
