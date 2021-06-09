@@ -2,8 +2,8 @@
 {
     public enum MediaType
     {
-        Image,
-        Animated_Image,
-        Video
+        Image = 1,
+        Animated_Image = 2,
+        Video = 3
     }
 }

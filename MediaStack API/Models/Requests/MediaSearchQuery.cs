@@ -29,6 +29,10 @@ namespace MediaStack_API.Models.Requests
 
         public int? GreaterThanScore { get; set; }
 
+        public MediaType? Type { get; set; }
+
+        public string SortBy { get; set; }
+
         public int Offset { get; set; } = 0;
 
         public int Count { get; set; } = 5;
@@ -57,11 +61,35 @@ namespace MediaStack_API.Models.Requests
             if (this.Score != null) query = query.Where(m => m.Score == this.Score);
             if (this.GreaterThanScore != null) query = query.Where(m => m.Score > this.Score);
             if (this.LessThanScore != null) query = query.Where(m => m.Score < this.Score);
+            if (this.Type != null) query = query.Where(m => m.Type == this.Type);
             this.BlacklistAlbumIDs?.ForEach(id => query = query.Where(m => m.AlbumID != id));
             this.BlacklistArtistIDs?.ForEach(id => query = query.Where(m => m.ArtistID != id));
             this.BlacklistCategoryIDs?.ForEach(id => query = query.Where(m => m.CategoryID != id));
             this.WhitelistTagIDs?.ForEach(id => query = query.Where(m => m.Tags.Select(t => t.ID).Contains(id)));
             this.BlacklistTagIDs?.ForEach(id => query = query.Where(m => !m.Tags.Select(t => t.ID).Contains(id)));
+
+            switch (this.SortBy)
+            {
+                case nameof(Media.Album):
+                    query = query.OrderBy(m => m.AlbumID);
+                    break;
+                case nameof(Media.Artist):
+                    query = query.OrderBy(m => m.ArtistID);
+                    break;
+                case nameof(Media.Category):
+                    query = query.OrderBy(m => m.CategoryID);
+                    break;
+                case nameof(Media.Score):
+                    query = query.OrderBy(m => m.Score);
+                    break;
+                case nameof(Media.Created):
+                    query = query.OrderBy(m => m.Created);
+                    break;
+                case nameof(Media.Type):
+                    query = query.OrderBy(m => m.Type);
+                    break;
+            }
+
             return query;
         }
 
