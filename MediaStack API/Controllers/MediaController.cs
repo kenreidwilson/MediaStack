@@ -225,6 +225,8 @@ namespace MediaStack_API.Controllers
                     filePath += "_";
                 }
 
+                media.Path = filePath;
+
                 await using (var stream = new FileStream(filePath, FileMode.Create))
                 {
                     await file.CopyToAsync(stream);
@@ -233,7 +235,7 @@ namespace MediaStack_API.Controllers
                 unitOfWork.Save();
             }
 
-            return Ok(media);
+            return Ok(new BaseResponse(this.Mapper.Map<MediaViewModel>(media)));
         }
 
         protected byte[] GetMediaImageBytes(Media media)
