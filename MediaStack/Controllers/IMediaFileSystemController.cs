@@ -22,14 +22,14 @@ namespace MediaStackCore.Controllers
         ///     and moves the file there.
         /// </summary>
         /// <param name="media">The Media.</param>
-        public void MoveMedia(Media media);
+        public string MoveMedia(Media media);
 
         /// <summary>
         ///     Determines where the Album should exist on disk
         ///     and moves all Media in the album to there.
         /// </summary>
         /// <param name="album">The Album.</param>
-        public void MoveAlbum(Album album);
+        public string MoveAlbum(Album album);
 
         /// <summary>
         ///     Returns the full path of the Media.

@@ -3,6 +3,7 @@ using System.Dynamic;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
+using MediaStackCore.Data_Access_Layer;
 using MediaStackCore.Models;
 using MimeDetective.Extensions;
 
@@ -39,18 +40,30 @@ namespace MediaStackCore.Controllers
         ///     Moves the Media file to the location specified.
         /// </summary>
         /// <param name="media"></param>
-        public void MoveMedia(Media media)
+        public string MoveMedia(Media media)
         {
-            throw new NotImplementedException();
+            string newPath = this.DetermineMediaFilePath(media);
+            var directoryInfo = new FileInfo(newPath).Directory;
+            directoryInfo?.Create();
+            File.Move(this.GetMediaFullPath(media), newPath);
+            return newPath;
         }
 
         /// <summary>
         ///     Moves all Media in an Album to the location specified.
         /// </summary>
         /// <param name="album"></param>
-        public void MoveAlbum(Album album)
+        public string MoveAlbum(Album album)
         {
-            throw new NotImplementedException();
+            string newPath = "";
+
+            foreach (Media media in album.Media)
+            {
+                newPath = this.MoveMedia(media);
+            }
+
+            string[] pathSplit = newPath.Split(Path.DirectorySeparatorChar);
+            return string.Join(Path.DirectorySeparatorChar, pathSplit.Take(pathSplit.Length - 1));
         }
 
         public string GetMediaFullPath(Media media)
@@ -76,7 +89,28 @@ namespace MediaStackCore.Controllers
         /// <returns></returns>
         public string DetermineMediaFilePath(Media media)
         {
-            return $@"{this.MediaDirectory}{media.Category.Name}{media.Artist.Name}{media.Album.Name}";
+            if (media.Path == null)
+            {
+                throw new ArgumentException();
+            }
+
+            string fileName = media.Path.Split(Path.DirectorySeparatorChar).Last();
+            string newPath = this.MediaDirectory;
+
+            if (media.CategoryID != null)
+            {
+                newPath += $@"{media.Category.Name}{Path.DirectorySeparatorChar}";
+                if (media.ArtistID != null)
+                {
+                    newPath += $@"{media.Artist.Name}{Path.DirectorySeparatorChar}";
+                    if (media.AlbumID != null)
+                    {
+                        newPath += $@"{media.Album.Name}{Path.DirectorySeparatorChar}";
+                    }
+                }
+            }
+
+            return $@"{newPath}{fileName}";
         }
 
         /// <summary>

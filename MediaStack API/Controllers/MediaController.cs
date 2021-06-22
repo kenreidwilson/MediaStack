@@ -119,7 +119,26 @@ namespace MediaStack_API.Controllers
                 {
                     return BadRequest();
                 }
+
+                unitOfWork.Media.Update(newMedia);
                 unitOfWork.Save();
+
+                /**
+                if (editRequest.CategoryID != null || editRequest.ArtistID != null || editRequest.AlbumID != null)
+                {
+                    newMedia.Path = this.FSController.MoveMedia(
+                        unitOfWork.Media.Get()
+                                  .Include(m => m.Category)
+                                  .Include(m => m.Artist)
+                                  .Include(m => m.Album)
+                                  .First(m => m.ID == newMedia.ID)
+                    ).Substring(this.FSController.MediaDirectory.Length);
+                }
+
+                unitOfWork.Media.Update(newMedia);
+                unitOfWork.Save();
+                */
+
                 return Ok(new BaseResponse(this.Mapper.Map<MediaViewModel>(newMedia)));
             }
         }
@@ -219,7 +238,7 @@ namespace MediaStack_API.Controllers
                     return BadRequest(new BaseResponse(null, "Duplicate"));
                 }
 
-                string filePath = $"{this.FSController.MediaDirectory}{media.Hash}";
+                string filePath = $"{media.Hash}";
                 while (System.IO.File.Exists(filePath))
                 {
                     filePath += "_";
