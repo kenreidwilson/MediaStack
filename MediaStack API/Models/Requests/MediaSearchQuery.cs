@@ -65,8 +65,32 @@ namespace MediaStack_API.Models.Requests
             this.BlacklistAlbumIDs?.ForEach(id => query = query.Where(m => m.AlbumID != id));
             this.BlacklistArtistIDs?.ForEach(id => query = query.Where(m => m.ArtistID != id));
             this.BlacklistCategoryIDs?.ForEach(id => query = query.Where(m => m.CategoryID != id));
-            this.WhitelistTagIDs?.ForEach(id => query = query.Where(m => m.Tags.Select(t => t.ID).Contains(id)));
-            this.BlacklistTagIDs?.ForEach(id => query = query.Where(m => !m.Tags.Select(t => t.ID).Contains(id)));
+            
+            if (this.Mode == SearchMode.MediaAndAlbumCover)
+            {
+                this.WhitelistTagIDs?.ForEach(
+                    id => query = query.Where(m =>
+                        (m.AlbumID == null && m.Tags.Select(t => t.ID).Contains(id)) ||
+                        (m.AlbumID != null &&
+                         m.AlbumOrder == 0 &&
+                         m.Album.Media.Any(me => me.Tags.Select(t => t.ID).Contains(id)))
+                    )
+                );
+
+                this.BlacklistTagIDs?.ForEach(
+                    id => query = query.Where(m =>
+                        (m.AlbumID == null && !m.Tags.Select(t => t.ID).Contains(id)) ||
+                        (m.AlbumID != null &&
+                         m.AlbumOrder == 0 &&
+                         m.Album.Media.All(me => !me.Tags.Select(t => t.ID).Contains(id)))
+                    )
+                );
+            }
+            else
+            {
+                this.WhitelistTagIDs?.ForEach(id => query = query.Where(m => m.Tags.Select(t => t.ID).Contains(id)));
+                this.BlacklistTagIDs?.ForEach(id => query = query.Where(m => !m.Tags.Select(t => t.ID).Contains(id)));
+            }
 
             switch (this.SortBy)
             {
