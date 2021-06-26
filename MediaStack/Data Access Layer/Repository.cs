@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 
 namespace MediaStackCore.Data_Access_Layer
@@ -19,9 +20,19 @@ namespace MediaStackCore.Data_Access_Layer
             this.context.Set<T>().Add(entity);
         }
 
+        public virtual async Task InsertAsync(T entity)
+        {
+            await this.context.Set<T>().AddAsync(entity);
+        }
+
         public virtual void BulkInsert(IList<T> entities)
         {
             this.context.Set<T>().AddRange(entities);
+        }
+
+        public virtual async Task BulkInsertAsync(IList<T> entities)
+        {
+            await this.context.Set<T>().AddRangeAsync(entities);
         }
 
         public virtual IQueryable<T> Get(Expression<Func<T, bool>> expression = null)
@@ -37,6 +48,11 @@ namespace MediaStackCore.Data_Access_Layer
         public virtual void BulkUpdate(IList<T> entities)
         {
             this.context.UpdateRange(entities);
+        }
+
+        public virtual async Task BulkUpdateAsync(IList<T> entities)
+        {
+            await this.context.Set<T>().AddRangeAsync(entities);
         }
 
         public virtual void Delete(T entity)

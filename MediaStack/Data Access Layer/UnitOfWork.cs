@@ -1,4 +1,5 @@
-﻿using MediaStackCore.Models;
+﻿using System.Threading.Tasks;
+using MediaStackCore.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace MediaStackCore.Data_Access_Layer
@@ -7,15 +8,15 @@ namespace MediaStackCore.Data_Access_Layer
     {
         protected DbContext Context;
 
-        public IRepository<Media> Media { get; }
+        public virtual IRepository<Media> Media { get; }
 
-        public IRepository<Album> Albums { get; }
+        public virtual IRepository<Album> Albums { get; }
 
-        public IRepository<Artist> Artists { get; }
+        public virtual IRepository<Artist> Artists { get; }
 
-        public IRepository<Category> Categories { get; }
+        public virtual IRepository<Category> Categories { get; }
 
-        public IRepository<Tag> Tags { get; }
+        public virtual IRepository<Tag> Tags { get; }
 
         public UnitOfWork(DbContext context)
         {
@@ -27,12 +28,17 @@ namespace MediaStackCore.Data_Access_Layer
             this.Tags = new Repository<Tag>(this.Context);
         }
 
-        public void Save()
+        public virtual void Save()
         {
             this.Context.SaveChanges();
         }
 
-        public void Dispose()
+        public virtual async Task SaveAsync()
+        {
+            await this.Context.SaveChangesAsync();
+        }
+
+        public virtual void Dispose()
         {
             this.Context.Dispose();
         }

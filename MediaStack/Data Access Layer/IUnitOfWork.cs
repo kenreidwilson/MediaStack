@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 using MediaStackCore.Models;
 
 namespace MediaStackCore.Data_Access_Layer
@@ -15,6 +16,8 @@ namespace MediaStackCore.Data_Access_Layer
 
         IRepository<Tag> Tags { get; }
 
-        public void Save();
+        void Save();
+
+        Task SaveAsync();
     }
 }
