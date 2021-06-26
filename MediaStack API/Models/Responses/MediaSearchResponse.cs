@@ -7,8 +7,9 @@ namespace MediaStack_API.Models.Responses
     {
         #region Constructors
 
-        public MediaSearchResponse(IEnumerable<MediaViewModel> media, int offset, int count, int total, string message = "") 
-            : base(new {media, offset, count, total}, message) { }
+        public MediaSearchResponse(IEnumerable<MediaViewModel> entities, int offset, int count, int total,
+            string message = "")
+            : base(new {media = entities, offset, count, total}, message) { }
 
         #endregion
     }

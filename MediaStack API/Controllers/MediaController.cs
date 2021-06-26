@@ -18,6 +18,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace MediaStack_API.Controllers
 {
+    [EnableCors]
     [Route("/[controller]")]
     public class MediaController : Controller
     {
@@ -50,7 +51,6 @@ namespace MediaStack_API.Controllers
 
         #region Methods
 
-        [EnableCors("_myAllowSpecificOrigins")]
         [HttpPost]
         public async Task<IActionResult> Index([FromBody] MediaSearchQuery searchQuery)
         {
@@ -93,7 +93,6 @@ namespace MediaStack_API.Controllers
             }
         }
 
-        [EnableCors("_myAllowSpecificOrigins")]
         [HttpPut("{id}/Edit")]
         public IActionResult Edit([FromBody] MediaEditRequest editRequest, int id)
         {

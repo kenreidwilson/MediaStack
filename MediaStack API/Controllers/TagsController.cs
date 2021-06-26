@@ -1,8 +1,10 @@
 ﻿using System.Linq;
 using System.Threading.Tasks;
 using AutoMapper;
+using MediaStack_API.Models.Requests;
 using MediaStack_API.Models.Responses;
 using MediaStack_API.Models.ViewModels;
+using MediaStackCore.Data_Access_Layer;
 using MediaStackCore.Models;
 using MediaStackCore.Services.UnitOfWorkService;
 using Microsoft.AspNetCore.Cors;
@@ -11,6 +13,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace MediaStack_API.Controllers
 {
+    [EnableCors]
     [Route("/[controller]")]
     public class TagsController : Controller
     {
@@ -34,44 +37,26 @@ namespace MediaStack_API.Controllers
 
         #region Methods
 
-        public async Task<IActionResult> IndexAsync()
+        [HttpGet]
+        public IActionResult IndexAsync([FromQuery] TagViewModel potentialTag)
         {
             using (var unitOfWork = this.UnitOfWorkService.Create())
             {
-                return Ok(new BaseResponse(await unitOfWork.Tags.Get().Select(t => this.Mapper.Map<TagViewModel>(t)).ToListAsync()));
-            }
-        }
+                Tag tag = null;
 
-        [HttpPost]
-        public IActionResult Index([FromBody] TagViewModel tag)
-        {
-            using (var unitOfWork = this.UnitOfWorkService.Create())
-            {
-                if (!ModelState.IsValid || tag.ID != 0)
+                if (potentialTag.Name != null)
                 {
-                    return BadRequest();
-                }
-
-                if (unitOfWork.Tags.Get().Any(t => t.Name == tag.Name))
-                {
-                    return BadRequest(new BaseResponse(null, "Duplicate."));
-                }
-
-                unitOfWork.Tags.Insert(this.Mapper.Map<Tag>(tag));
-                unitOfWork.Save();
-                var createdTag = unitOfWork.Tags.Get(t => t.Name == tag.Name).First();
-                return Ok(new BaseResponse(this.Mapper.Map<TagViewModel>(createdTag)));
-            }
-        }
-
-        [HttpGet("{id}")]
-        public IActionResult Details(int id)
-        {
-            using (var unitOfWork = this.UnitOfWorkService.Create())
-            {
-                var tag = unitOfWork.Tags
+                    tag = unitOfWork.Tags
                                     .Get()
-                                    .FirstOrDefault(t => t.ID == id);
+                                    .FirstOrDefault(t => t.Name == potentialTag.Name);
+                }
+
+                if (potentialTag.ID != 0)
+                {
+                    tag = unitOfWork.Tags
+                                    .Get()
+                                    .FirstOrDefault(t => t.ID == potentialTag.ID);
+                }
 
                 if (tag == null)
                 {
@@ -82,22 +67,53 @@ namespace MediaStack_API.Controllers
             }
         }
 
-        [EnableCors("_myAllowSpecificOrigins")]
-        [HttpPut("{id}")]
-        public IActionResult Update(int id, [FromBody] TagViewModel tag)
+        [HttpPost]
+        public IActionResult Create([FromQuery] TagViewModel potentialTag)
         {
+            if (potentialTag.Name == null)
+            {
+                return BadRequest();
+            }
+
             using (var unitOfWork = this.UnitOfWorkService.Create())
             {
-                var tagModel = unitOfWork.Tags
-                                    .Get()
-                                    .FirstOrDefault(t => t.ID == id);
-
-                if (tagModel == null || unitOfWork.Tags.Get().Any(t => t.Name == tag.Name))
+                if (!ModelState.IsValid || potentialTag.ID != 0)
                 {
                     return BadRequest();
                 }
 
-                tagModel.Name = tag.Name;
+                if (unitOfWork.Tags.Get().Any(t => t.Name == potentialTag.Name))
+                {
+                    return BadRequest(new BaseResponse(null, "Duplicate."));
+                }
+
+                unitOfWork.Tags.Insert(this.Mapper.Map<Tag>(potentialTag));
+                unitOfWork.Save();
+                var createdTag = unitOfWork.Tags.Get(t => t.Name == potentialTag.Name).First();
+                return Ok(new BaseResponse(this.Mapper.Map<TagViewModel>(createdTag)));
+            }
+        }
+
+        [HttpPut]
+        public IActionResult Update([FromQuery] TagViewModel potentialTag)
+        {
+            if (potentialTag.Name == null)
+            {
+                return BadRequest();
+            }
+
+            using (var unitOfWork = this.UnitOfWorkService.Create())
+            {
+                var tagModel = unitOfWork.Tags
+                                    .Get()
+                                    .FirstOrDefault(t => t.ID == potentialTag.ID);
+
+                if (tagModel == null || unitOfWork.Tags.Get().Any(t => t.Name == potentialTag.Name))
+                {
+                    return BadRequest();
+                }
+
+                tagModel.Name = potentialTag.Name;
 
                 unitOfWork.Tags.Update(tagModel);
                 unitOfWork.Save();
@@ -106,15 +122,14 @@ namespace MediaStack_API.Controllers
             }
         }
 
-        [EnableCors("_myAllowSpecificOrigins")]
-        [HttpDelete("{id}")]
-        public IActionResult Delete(int id)
+        [HttpDelete]
+        public IActionResult Delete([FromQuery] TagViewModel potentialTag)
         {
             using (var unitOfWork = this.UnitOfWorkService.Create())
             {
                 var tag = unitOfWork.Tags
                                          .Get()
-                                         .FirstOrDefault(t => t.ID == id);
+                                         .FirstOrDefault(t => t.ID == potentialTag.ID);
 
                 if (tag == null)
                 {
@@ -125,6 +140,23 @@ namespace MediaStack_API.Controllers
                 unitOfWork.Save();
 
                 return Ok();
+            }
+        }
+
+        [HttpGet("Search")]
+        public async  Task<IActionResult> Search([FromQuery] TagSearchQuery tagsQuery)
+        {
+            using (IUnitOfWork unitOfWork = this.UnitOfWorkService.Create())
+            {
+                IQueryable<Tag> query = tagsQuery.GetQuery(unitOfWork);
+                int total = query.Count();
+                var tags = await query
+                                 .Skip(tagsQuery.Offset)
+                                 .Take(tagsQuery.Count)
+                                 .Select(t => this.Mapper.Map<TagViewModel>(t))
+                                 .ToListAsync();
+
+                return Ok(new TagsSearchResponse(tags, tagsQuery.Offset, tagsQuery.Count, total));
             }
         }
 

@@ -5,11 +5,13 @@ using MediaStack_API.Models.Responses;
 using MediaStack_API.Models.ViewModels;
 using MediaStackCore.Models;
 using MediaStackCore.Services.UnitOfWorkService;
+using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace MediaStack_API.Controllers
 {
+    [EnableCors]
     [Route("/[controller]")]
     public class CategoriesController : Controller
     {
