@@ -1,6 +1,7 @@
 ﻿using System.Linq;
 using System.Threading.Tasks;
 using AutoMapper;
+using MediaStack_API.Models.Requests;
 using MediaStack_API.Models.Responses;
 using MediaStack_API.Models.ViewModels;
 using MediaStackCore.Models;
@@ -35,16 +36,25 @@ namespace MediaStack_API.Controllers
 
         #region Methods
 
-        public async Task<IActionResult> IndexAsync()
+        public async Task<IActionResult> Read([FromQuery] ArtistViewModel potentialArtist)
         {
             using (var unitOfWork = this.UnitOfWorkService.Create())
             {
-                return Ok(new BaseResponse(await unitOfWork.Artists.Get().Select(a => this.Mapper.Map<ArtistViewModel>(a)).ToListAsync()));
+                var artist = await unitOfWork.Artists
+                                             .Get()
+                                             .FirstOrDefaultAsync(a => a.ID == potentialArtist.ID);
+
+                if (artist == null)
+                {
+                    return NotFound();
+                }
+
+                return Ok(new BaseResponse(this.Mapper.Map<ArtistViewModel>(artist)));
             }
         }
 
         [HttpPost]
-        public async Task<IActionResult> Index([FromBody] ArtistViewModel artist)
+        public async Task<IActionResult> Create([FromQuery] ArtistViewModel artist)
         {
             using (var unitOfWork = this.UnitOfWorkService.Create())
             {
@@ -65,21 +75,20 @@ namespace MediaStack_API.Controllers
             }
         }
 
-        [HttpGet("{id}")]
-        public async Task<IActionResult> Details(int id)
+        [HttpGet("Search")]
+        public async Task<IActionResult> Search([FromQuery] ArtistSearchQuery artistQuery)
         {
             using (var unitOfWork = this.UnitOfWorkService.Create())
             {
-                var artist = await unitOfWork.Artists
-                                       .Get()
-                                       .FirstOrDefaultAsync(a => a.ID == id);
+                var query = artistQuery.GetQuery(unitOfWork);
+                var total = await query.CountAsync();
+                var artists = await query
+                                       .Skip(artistQuery.Offset)
+                                       .Take(artistQuery.Count)
+                                       .Select(t => this.Mapper.Map<ArtistViewModel>(t))
+                                       .ToListAsync();
 
-                if (artist == null)
-                {
-                    return NotFound();
-                }
-
-                return Ok(new BaseResponse(this.Mapper.Map<ArtistViewModel>(artist)));
+                return Ok(new ArtistsSearchResponse(artists, artistQuery.Offset, artistQuery.Count, total));
             }
         }
 

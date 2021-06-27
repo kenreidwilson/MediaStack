@@ -38,11 +38,11 @@ namespace MediaStack_API.Controllers
         #region Methods
 
         [HttpGet]
-        public async Task<IActionResult> IndexAsync([FromQuery] TagViewModel potentialTag)
+        public async Task<IActionResult> Read([FromQuery] TagViewModel potentialTag)
         {
             if (potentialTag.ID == 0 && potentialTag.Name == null)
             {
-                return BadRequest("You must provide a Tag ID or Name.");
+                return BadRequest("You must provide a valid Tag ID or Name.");
             }
 
             using (var unitOfWork = this.UnitOfWorkService.Create())
@@ -53,14 +53,7 @@ namespace MediaStack_API.Controllers
                 {
                     tag = await unitOfWork.Tags
                                     .Get()
-                                    .FirstOrDefaultAsync(t => t.Name == potentialTag.Name);
-                }
-
-                if (potentialTag.ID != 0)
-                {
-                    tag = await unitOfWork.Tags
-                                    .Get()
-                                    .FirstOrDefaultAsync(t => t.ID == potentialTag.ID);
+                                    .FirstOrDefaultAsync(t => t.ID == potentialTag.ID || t.Name == potentialTag.Name);
                 }
 
                 if (tag == null)

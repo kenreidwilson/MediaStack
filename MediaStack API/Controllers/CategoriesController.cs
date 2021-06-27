@@ -1,6 +1,7 @@
 ﻿using System.Linq;
 using System.Threading.Tasks;
 using AutoMapper;
+using MediaStack_API.Models.Requests;
 using MediaStack_API.Models.Responses;
 using MediaStack_API.Models.ViewModels;
 using MediaStackCore.Models;
@@ -35,16 +36,25 @@ namespace MediaStack_API.Controllers
 
         #region Methods
 
-        public async Task<IActionResult> IndexAsync()
+        public async Task<IActionResult> Read([FromQuery] CategoryViewModel potentialCategory)
         {
             using (var unitOfWork = this.UnitOfWorkService.Create())
             {
-                return Ok(new BaseResponse(await unitOfWork.Categories.Get().Select(c => this.Mapper.Map<CategoryViewModel>(c)).ToListAsync()));
+                var category = await unitOfWork.Categories
+                                               .Get()
+                                               .FirstOrDefaultAsync(c => c.ID == potentialCategory.ID);
+
+                if (category == null)
+                {
+                    return NotFound();
+                }
+
+                return Ok(new BaseResponse(this.Mapper.Map<CategoryViewModel>(category)));
             }
         }
 
         [HttpPost]
-        public async Task<IActionResult> Index([FromBody] CategoryViewModel category)
+        public async Task<IActionResult> Create([FromQuery] CategoryViewModel category)
         {
             using (var unitOfWork = this.UnitOfWorkService.Create())
             {
@@ -65,21 +75,20 @@ namespace MediaStack_API.Controllers
             }
         }
 
-        [HttpGet("{id}")]
-        public async Task<IActionResult> Details(int id)
+        [HttpGet("Search")]
+        public async Task<IActionResult> Search([FromQuery] CategorySearchQuery categoryQuery)
         {
             using (var unitOfWork = this.UnitOfWorkService.Create())
             {
-                var category = await unitOfWork.Categories
-                                         .Get()
-                                         .FirstOrDefaultAsync(c => c.ID == id);
+                var query = categoryQuery.GetQuery(unitOfWork);
+                var total = await query.CountAsync();
+                var categories = await query
+                                 .Skip(categoryQuery.Offset)
+                                 .Take(categoryQuery.Count)
+                                 .Select(t => this.Mapper.Map<CategoryViewModel>(t))
+                                 .ToListAsync();
 
-                if (category == null)
-                {
-                    return NotFound();
-                }
-
-                return Ok(new BaseResponse(this.Mapper.Map<CategoryViewModel>(category)));
+                return Ok(new CategorySearchResponse(categories, categoryQuery.Offset, categoryQuery.Count, total));
             }
         }
 

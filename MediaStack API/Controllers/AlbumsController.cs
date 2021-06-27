@@ -37,16 +37,30 @@ namespace MediaStack_API.Controllers
         #region Methods
 
         [HttpGet]
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Read([FromQuery] AlbumViewModel potentialAlbum)
         {
+            if (potentialAlbum.ID == 0)
+            {
+                return BadRequest("You must provide a valid Album ID.");
+            }
+
             using (var unitOfWork = this.UnitOfWorkService.Create())
             {
-                return Ok(new BaseResponse(await unitOfWork.Albums.Get().Select(a => this.Mapper.Map<AlbumViewModel>(a)).ToListAsync()));
+                var album = await unitOfWork.Albums
+                                            .Get()
+                                            .FirstOrDefaultAsync(a => a.ID == potentialAlbum.ID);
+
+                if (album == null)
+                {
+                    return NotFound();
+                }
+
+                return Ok(new BaseResponse(this.Mapper.Map<AlbumViewModel>(album)));
             }
         }
 
         [HttpPost]
-        public async Task<IActionResult> Index([FromBody] AlbumViewModel album)
+        public async Task<IActionResult> Create([FromQuery] AlbumViewModel album)
         {
             using (var unitOfWork = this.UnitOfWorkService.Create())
             {
@@ -62,31 +76,31 @@ namespace MediaStack_API.Controllers
 
                 await unitOfWork.Albums.InsertAsync(this.Mapper.Map<Album>(album));
                 await unitOfWork.SaveAsync();
-                Album createdAlbum = unitOfWork.Albums.Get(a => a.ArtistID == album.ArtistID && a.Name == album.Name).First();
+                var createdAlbum = unitOfWork.Albums.Get(a => a.ArtistID == album.ArtistID && a.Name == album.Name)
+                                             .First();
                 return Ok(new BaseResponse(this.Mapper.Map<AlbumViewModel>(createdAlbum)));
             }
         }
 
-        [HttpGet("{id}")]
-        public async Task<IActionResult> Details(int id)
+        [HttpGet("Search")]
+        public async Task<IActionResult> Search([FromQuery] AlbumSearchQuery albumQuery)
         {
             using (var unitOfWork = this.UnitOfWorkService.Create())
             {
-                var album = await unitOfWork.Albums
-                                      .Get()
-                                      .FirstOrDefaultAsync(a => a.ID == id);
+                var query = albumQuery.GetQuery(unitOfWork);
+                var total = await query.CountAsync();
+                var tags = await query
+                                 .Skip(albumQuery.Offset)
+                                 .Take(albumQuery.Count)
+                                 .Select(t => this.Mapper.Map<AlbumViewModel>(t))
+                                 .ToListAsync();
 
-                if (album == null)
-                {
-                    return NotFound();
-                }
-
-                return Ok(new BaseResponse(this.Mapper.Map<AlbumViewModel>(album)));
+                return Ok(new AlbumsSearchResponse(tags, albumQuery.Offset, albumQuery.Count, total));
             }
         }
 
-        [HttpPost("Sort")]
-        public async Task<IActionResult> Sort([FromBody] AlbumSortRequest request)
+        [HttpPut("Sort")]
+        public async Task<IActionResult> Sort([FromQuery] AlbumSortRequest request)
         {
             using (var unitOfWork = this.UnitOfWorkService.Create())
             {
@@ -95,7 +109,8 @@ namespace MediaStack_API.Controllers
                     return BadRequest();
                 }
 
-                return Ok(new BaseResponse(this.Mapper.Map<AlbumViewModel>(await request.SortRequestedAlbum(unitOfWork))));
+                return Ok(new BaseResponse(
+                    this.Mapper.Map<AlbumViewModel>(await request.SortRequestedAlbum(unitOfWork))));
             }
         }
 
