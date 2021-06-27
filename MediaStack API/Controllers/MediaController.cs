@@ -75,14 +75,14 @@ namespace MediaStack_API.Controllers
         }
 
         [HttpGet("{id}")]
-        public IActionResult Info(int id)
+        public async Task<IActionResult> Info(int id)
         {
             using (var unitOfWork = this.UnitOfWorkService.Create())
             {
-                var media = unitOfWork.Media
+                var media = await unitOfWork.Media
                                       .Get()
                                       .Include(m => m.Tags)
-                                      .FirstOrDefault(m => m.ID == id);
+                                      .FirstOrDefaultAsync(m => m.ID == id);
 
                 if (media == null)
                 {
@@ -94,7 +94,7 @@ namespace MediaStack_API.Controllers
         }
 
         [HttpPut("{id}/Edit")]
-        public IActionResult Edit([FromBody] MediaEditRequest editRequest, int id)
+        public async Task<IActionResult> Edit([FromBody] MediaEditRequest editRequest, int id)
         {
             using (var unitOfWork = this.UnitOfWorkService.Create())
             {
@@ -103,7 +103,7 @@ namespace MediaStack_API.Controllers
                     return BadRequest();
                 }
 
-                Media media = unitOfWork.Media.Get().Include(m => m.Tags).FirstOrDefault(m => m.ID == id);
+                Media media = await unitOfWork.Media.Get().Include(m => m.Tags).FirstOrDefaultAsync(m => m.ID == id);
                 if (media == null)
                 {
                     return NotFound();
@@ -112,7 +112,7 @@ namespace MediaStack_API.Controllers
                 Media newMedia;
                 try
                 {
-                    newMedia = editRequest.UpdateMedia(unitOfWork, media);
+                    newMedia = await editRequest.UpdateMedia(unitOfWork, media);
                 }
                 catch (MediaEditRequest.BadRequestException)
                 {
@@ -120,7 +120,7 @@ namespace MediaStack_API.Controllers
                 }
 
                 unitOfWork.Media.Update(newMedia);
-                unitOfWork.Save();
+                await unitOfWork.SaveAsync();
 
                 /**
                 if (editRequest.CategoryID != null || editRequest.ArtistID != null || editRequest.AlbumID != null)
@@ -143,7 +143,7 @@ namespace MediaStack_API.Controllers
         }
 
         [HttpGet("{id}/File")]
-        public IActionResult File(int id)
+        public async Task<IActionResult> File(int id)
         {
             if (id == 0)
             {
@@ -152,16 +152,15 @@ namespace MediaStack_API.Controllers
 
             using (var unitOfWork = this.UnitOfWorkService.Create())
             {
-                var media = unitOfWork.Media.Get(m => m.ID == id).FirstOrDefault();
+                var media = await unitOfWork.Media.Get(m => m.ID == id).FirstOrDefaultAsync();
                 if (media == null)
                 {
                     return NotFound();
                 }
 
-
                 try
                 {
-                    return File(this.GetMediaImageBytes(media), media.Type == MediaType.Video ? "video/mp4" : "image/png");
+                    return File(await this.GetMediaImageBytes(media), media.Type == MediaType.Video ? "video/mp4" : "image/png");
                 }
                 catch (Exception)
                 {
@@ -180,7 +179,7 @@ namespace MediaStack_API.Controllers
 
             using (var unitOfWork = this.UnitOfWorkService.Create())
             {
-                var media = unitOfWork.Media.Get(m => m.ID == id).FirstOrDefault();
+                var media = await unitOfWork.Media.Get(m => m.ID == id).FirstOrDefaultAsync();
                 if (media == null)
                 {
                     return NotFound();
@@ -190,10 +189,10 @@ namespace MediaStack_API.Controllers
                 {
                     if (this.Thumbnailer.HasThumbnail(media) || await this.Thumbnailer.CreateThumbnail(media))
                     {
-                        return File(this.GetMediaThumbnailBytes(media), "image/png");
+                        return File(await this.GetMediaThumbnailBytes(media), "image/png");
                     }
 
-                    return File(this.GetDefaultThumbnailBytes(), "image/png");
+                    return File(await this.GetDefaultThumbnailBytes(), "image/png");
                 }
                 catch (Exception)
                 {
@@ -212,7 +211,7 @@ namespace MediaStack_API.Controllers
             Media media = new Media();
             try
             {
-                using (var stream = file.OpenReadStream())
+                await using (var stream = file.OpenReadStream())
                 {
                     media.Hash = this.FSController.CalculateHash(stream);
                     stream.Position = 0;
@@ -232,7 +231,7 @@ namespace MediaStack_API.Controllers
 
             using (IUnitOfWork unitOfWork = this.UnitOfWorkService.Create())
             {
-                if (unitOfWork.Media.Get().Any(m => m.Hash == media.Hash))
+                if (await unitOfWork.Media.Get().AnyAsync(m => m.Hash == media.Hash))
                 {
                     return BadRequest(new BaseResponse(null, "Duplicate"));
                 }
@@ -249,31 +248,31 @@ namespace MediaStack_API.Controllers
                 {
                     await file.CopyToAsync(stream);
                 }
-                unitOfWork.Media.Insert(media);
-                unitOfWork.Save();
+                await unitOfWork.Media.InsertAsync(media);
+                await unitOfWork.SaveAsync();
             }
 
             return Ok(new BaseResponse(this.Mapper.Map<MediaViewModel>(media)));
         }
 
-        protected byte[] GetMediaImageBytes(Media media)
+        protected async Task<byte[]> GetMediaImageBytes(Media media)
         {
-            return this.readFile(this.FSController.GetMediaFullPath(media));
+            return await this.readFile(this.FSController.GetMediaFullPath(media));
         }
 
-        protected byte[] GetMediaThumbnailBytes(Media media)
+        protected async Task<byte[]> GetMediaThumbnailBytes(Media media)
         {
-            return this.readFile(this.Thumbnailer.GetThumbnailFullPath(media));
+            return await this.readFile(this.Thumbnailer.GetThumbnailFullPath(media));
         }
 
-        protected byte[] GetDefaultThumbnailBytes()
+        protected async Task<byte[]> GetDefaultThumbnailBytes()
         {
-            return this.readFile(this.Thumbnailer.GetDefaultThumbnailFullPath());
+            return await this.readFile(this.Thumbnailer.GetDefaultThumbnailFullPath());
         }
 
-        private byte[] readFile(string filePath)
+        private async Task<byte[]> readFile(string filePath)
         {
-            return System.IO.File.ReadAllBytes(filePath);
+            return await System.IO.File.ReadAllBytesAsync(filePath);
         }
 
         #endregion

@@ -44,7 +44,7 @@ namespace MediaStack_API.Controllers
         }
 
         [HttpPost]
-        public IActionResult Index([FromBody] ArtistViewModel artist)
+        public async Task<IActionResult> Index([FromBody] ArtistViewModel artist)
         {
             using (var unitOfWork = this.UnitOfWorkService.Create())
             {
@@ -53,26 +53,26 @@ namespace MediaStack_API.Controllers
                     return BadRequest();
                 }
 
-                if (unitOfWork.Artists.Get().Any(a => a.Name == artist.Name))
+                if (await unitOfWork.Artists.Get().AnyAsync(a => a.Name == artist.Name))
                 {
                     return BadRequest(new BaseResponse(null, "Duplicate."));
                 }
 
-                unitOfWork.Artists.Insert(this.Mapper.Map<Artist>(artist));
-                unitOfWork.Save();
-                var createdArtist = unitOfWork.Artists.Get(t => t.Name == artist.Name).First();
+                await unitOfWork.Artists.InsertAsync(this.Mapper.Map<Artist>(artist));
+                await unitOfWork.SaveAsync();
+                var createdArtist = await unitOfWork.Artists.Get(t => t.Name == artist.Name).FirstAsync();
                 return Ok(new BaseResponse(this.Mapper.Map<ArtistViewModel>(createdArtist)));
             }
         }
 
         [HttpGet("{id}")]
-        public IActionResult Details(int id)
+        public async Task<IActionResult> Details(int id)
         {
             using (var unitOfWork = this.UnitOfWorkService.Create())
             {
-                var artist = unitOfWork.Artists
+                var artist = await unitOfWork.Artists
                                        .Get()
-                                       .FirstOrDefault(a => a.ID == id);
+                                       .FirstOrDefaultAsync(a => a.ID == id);
 
                 if (artist == null)
                 {

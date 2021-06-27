@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 using MediaStackCore.Models;
 
 namespace MediaStack_API.Services.Thumbnailer
@@ -20,6 +21,8 @@ namespace MediaStack_API.Services.Thumbnailer
         public string GetThumbnailFullPath(Media media);
 
         public string GetDefaultThumbnailFullPath();
+
+        public class MediaTooLargeException : Exception { }
 
         #endregion
     }

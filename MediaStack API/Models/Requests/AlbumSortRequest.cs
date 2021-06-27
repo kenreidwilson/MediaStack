@@ -1,8 +1,10 @@
 ﻿using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
+using System.Threading.Tasks;
 using MediaStackCore.Data_Access_Layer;
 using MediaStackCore.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace MediaStack_API.Models.Requests
 {
@@ -14,20 +16,20 @@ namespace MediaStack_API.Models.Requests
         [Required]
         public int AlbumID { get; set; }
 
-        public Album SortRequestedAlbum(IUnitOfWork unitOfWork)
+        public async Task<Album> SortRequestedAlbum(IUnitOfWork unitOfWork)
         {
-            List<Media> medias = unitOfWork.Media.Get()
+            List<Media> medias = await unitOfWork.Media.Get()
                                            .Where(m => m.AlbumID == this.AlbumID)
                                            .OrderBy(m => m.Path)
-                                           .ToList();
+                                           .ToListAsync();
 
             foreach (Media media in medias)
             {
                 media.AlbumOrder = medias.IndexOf(media);
                 unitOfWork.Media.Update(media);
             }
-            unitOfWork.Save();
-            return unitOfWork.Albums.Get().First(a => a.ID == this.AlbumID);
+            await unitOfWork.SaveAsync();
+            return await unitOfWork.Albums.Get().FirstAsync(a => a.ID == this.AlbumID);
         }
     }
 }

@@ -46,7 +46,7 @@ namespace MediaStack_API.Controllers
         }
 
         [HttpPost]
-        public IActionResult Index([FromBody] AlbumViewModel album)
+        public async Task<IActionResult> Index([FromBody] AlbumViewModel album)
         {
             using (var unitOfWork = this.UnitOfWorkService.Create())
             {
@@ -60,21 +60,21 @@ namespace MediaStack_API.Controllers
                     return BadRequest(new BaseResponse(null, "Duplicate."));
                 }
 
-                unitOfWork.Albums.Insert(this.Mapper.Map<Album>(album));
-                unitOfWork.Save();
+                await unitOfWork.Albums.InsertAsync(this.Mapper.Map<Album>(album));
+                await unitOfWork.SaveAsync();
                 Album createdAlbum = unitOfWork.Albums.Get(a => a.ArtistID == album.ArtistID && a.Name == album.Name).First();
                 return Ok(new BaseResponse(this.Mapper.Map<AlbumViewModel>(createdAlbum)));
             }
         }
 
         [HttpGet("{id}")]
-        public IActionResult Details(int id)
+        public async Task<IActionResult> Details(int id)
         {
             using (var unitOfWork = this.UnitOfWorkService.Create())
             {
-                var album = unitOfWork.Albums
+                var album = await unitOfWork.Albums
                                       .Get()
-                                      .FirstOrDefault(a => a.ID == id);
+                                      .FirstOrDefaultAsync(a => a.ID == id);
 
                 if (album == null)
                 {
@@ -86,7 +86,7 @@ namespace MediaStack_API.Controllers
         }
 
         [HttpPost("Sort")]
-        public IActionResult Sort([FromBody] AlbumSortRequest request)
+        public async Task<IActionResult> Sort([FromBody] AlbumSortRequest request)
         {
             using (var unitOfWork = this.UnitOfWorkService.Create())
             {
@@ -95,7 +95,7 @@ namespace MediaStack_API.Controllers
                     return BadRequest();
                 }
 
-                return Ok(new BaseResponse(this.Mapper.Map<AlbumViewModel>(request.SortRequestedAlbum(unitOfWork))));
+                return Ok(new BaseResponse(this.Mapper.Map<AlbumViewModel>(await request.SortRequestedAlbum(unitOfWork))));
             }
         }
 

@@ -61,9 +61,9 @@ namespace MediaStack_API.Services.Thumbnailer
             switch (media.Type)
             {
                 case MediaType.Image:
-                    return this.CreateThumbnailFromImage(media);
+                    return await this.CreateThumbnailFromImage(media);
                 case MediaType.Animated_Image:
-                    return this.CreateThumbnailFromImage(media);
+                    return await this.CreateThumbnailFromImage(media);
                 case MediaType.Video:
                     return await this.CreateThumbnailFromVideo(media);
                 default:
@@ -81,27 +81,29 @@ namespace MediaStack_API.Services.Thumbnailer
             return $@"{this.ThumbnailDirectory}default";
         }
 
-        protected bool CreateThumbnailFromImage(Media media)
+        protected async Task<bool> CreateThumbnailFromImage(Media media)
         {
-            try
+            return await Task.Run(() =>
             {
-                var file = new FileInfo(this.FSController.GetMediaFullPath(media));
-                using (MagickImage image = new MagickImage(file))
+                try
                 {
-                    image.Thumbnail(new MagickGeometry(this.thumbnailWidth, this.thumbnailHeight));
-                    image.Write(this.DetermineThumbnailLocation(media));
+                    var file = new FileInfo(this.FSController.GetMediaFullPath(media));
+                    using (MagickImage image = new MagickImage(file))
+                    {
+                        image.Thumbnail(new MagickGeometry(this.thumbnailWidth, this.thumbnailHeight));
+                        image.Write(this.DetermineThumbnailLocation(media));
+                    }
+                    return true;
                 }
-                return true;
-            }
-            catch (OutOfMemoryException)
-            {
-                Console.WriteLine("");
-                return false;
-            }
-            catch (IOException)
-            {
-                return false;
-            }
+                catch (OutOfMemoryException)
+                {
+                    return false;
+                }
+                catch (IOException)
+                {
+                    return false;
+                }
+            });
         }
 
         protected async Task<bool> CreateThumbnailFromVideo(Media media)

@@ -1,9 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using System.Linq;
+using System.Threading.Tasks;
 using MediaStackCore.Data_Access_Layer;
 using MediaStackCore.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace MediaStack_API.Models.Requests
 {
@@ -30,11 +31,11 @@ namespace MediaStack_API.Models.Requests
 
         #region Methods
 
-        public Media UpdateMedia(IUnitOfWork unitOfWork, Media media)
+        public async Task<Media> UpdateMedia(IUnitOfWork unitOfWork, Media media)
         {
             if (this.CategoryID != null)
             {
-                if (!unitOfWork.Categories.Get().Any(c => c.ID == this.CategoryID))
+                if (!await unitOfWork.Categories.Get().AnyAsync(c => c.ID == this.CategoryID))
                 {
                     throw new BadRequestException();
                 }
@@ -43,7 +44,7 @@ namespace MediaStack_API.Models.Requests
 
             if (this.ArtistID != null)
             {
-                if (media.CategoryID == null || !unitOfWork.Artists.Get().Any(a => a.ID == this.ArtistID))
+                if (media.CategoryID == null || !await unitOfWork.Artists.Get().AnyAsync(a => a.ID == this.ArtistID))
                 {
                     throw new BadRequestException();
                 }
@@ -52,7 +53,7 @@ namespace MediaStack_API.Models.Requests
 
             if (this.AlbumID != null)
             {
-                if (media.CategoryID == null || media.ArtistID == null || unitOfWork.Albums.Get().Any(a => a.ID == this.AlbumID))
+                if (media.CategoryID == null || media.ArtistID == null || await unitOfWork.Albums.Get().AnyAsync(a => a.ID == this.AlbumID))
                 {
                     throw new BadRequestException();
                 }
@@ -75,7 +76,7 @@ namespace MediaStack_API.Models.Requests
             if (this.TagIDs != null)
             {
                 media.Tags.Clear();
-                media.Tags = unitOfWork.Tags.Get(t => this.TagIDs.Contains(t.ID)).ToList();
+                media.Tags = await unitOfWork.Tags.Get(t => this.TagIDs.Contains(t.ID)).ToListAsync();
                 if (this.TagIDs.Count != media.Tags.Count)
                 {
                     throw new BadRequestException();

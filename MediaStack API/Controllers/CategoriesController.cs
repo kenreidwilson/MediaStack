@@ -44,7 +44,7 @@ namespace MediaStack_API.Controllers
         }
 
         [HttpPost]
-        public IActionResult Index([FromBody] CategoryViewModel category)
+        public async Task<IActionResult> Index([FromBody] CategoryViewModel category)
         {
             using (var unitOfWork = this.UnitOfWorkService.Create())
             {
@@ -53,26 +53,26 @@ namespace MediaStack_API.Controllers
                     return BadRequest();
                 }
 
-                if (unitOfWork.Categories.Get().Any(c => c.Name == category.Name))
+                if (await unitOfWork.Categories.Get().AnyAsync(c => c.Name == category.Name))
                 {
                     return BadRequest(new BaseResponse(null, "Duplicate."));
                 }
 
-                unitOfWork.Categories.Insert(this.Mapper.Map<Category>(category));
-                unitOfWork.Save();
-                var createdCategory = unitOfWork.Categories.Get(c => c.Name == category.Name).First();
+                await unitOfWork.Categories.InsertAsync(this.Mapper.Map<Category>(category));
+                await unitOfWork.SaveAsync();
+                var createdCategory = await unitOfWork.Categories.Get(c => c.Name == category.Name).FirstAsync();
                 return Ok(new BaseResponse(this.Mapper.Map<CategoryViewModel>(createdCategory)));
             }
         }
 
         [HttpGet("{id}")]
-        public IActionResult Details(int id)
+        public async Task<IActionResult> Details(int id)
         {
             using (var unitOfWork = this.UnitOfWorkService.Create())
             {
-                var category = unitOfWork.Categories
+                var category = await unitOfWork.Categories
                                          .Get()
-                                         .FirstOrDefault(c => c.ID == id);
+                                         .FirstOrDefaultAsync(c => c.ID == id);
 
                 if (category == null)
                 {

@@ -38,24 +38,29 @@ namespace MediaStack_API.Controllers
         #region Methods
 
         [HttpGet]
-        public IActionResult IndexAsync([FromQuery] TagViewModel potentialTag)
+        public async Task<IActionResult> IndexAsync([FromQuery] TagViewModel potentialTag)
         {
+            if (potentialTag.ID == 0 && potentialTag.Name == null)
+            {
+                return BadRequest("You must provide a Tag ID or Name.");
+            }
+
             using (var unitOfWork = this.UnitOfWorkService.Create())
             {
                 Tag tag = null;
 
                 if (potentialTag.Name != null)
                 {
-                    tag = unitOfWork.Tags
+                    tag = await unitOfWork.Tags
                                     .Get()
-                                    .FirstOrDefault(t => t.Name == potentialTag.Name);
+                                    .FirstOrDefaultAsync(t => t.Name == potentialTag.Name);
                 }
 
                 if (potentialTag.ID != 0)
                 {
-                    tag = unitOfWork.Tags
+                    tag = await unitOfWork.Tags
                                     .Get()
-                                    .FirstOrDefault(t => t.ID == potentialTag.ID);
+                                    .FirstOrDefaultAsync(t => t.ID == potentialTag.ID);
                 }
 
                 if (tag == null)
@@ -68,7 +73,7 @@ namespace MediaStack_API.Controllers
         }
 
         [HttpPost]
-        public IActionResult Create([FromQuery] TagViewModel potentialTag)
+        public async Task<IActionResult> Create([FromQuery] TagViewModel potentialTag)
         {
             if (potentialTag.Name == null)
             {
@@ -87,15 +92,15 @@ namespace MediaStack_API.Controllers
                     return BadRequest(new BaseResponse(null, "Duplicate."));
                 }
 
-                unitOfWork.Tags.Insert(this.Mapper.Map<Tag>(potentialTag));
-                unitOfWork.Save();
+                await unitOfWork.Tags.InsertAsync(this.Mapper.Map<Tag>(potentialTag));
+                await unitOfWork.SaveAsync();
                 var createdTag = unitOfWork.Tags.Get(t => t.Name == potentialTag.Name).First();
                 return Ok(new BaseResponse(this.Mapper.Map<TagViewModel>(createdTag)));
             }
         }
 
         [HttpPut]
-        public IActionResult Update([FromQuery] TagViewModel potentialTag)
+        public async Task<IActionResult> Update([FromQuery] TagViewModel potentialTag)
         {
             if (potentialTag.Name == null)
             {
@@ -104,11 +109,11 @@ namespace MediaStack_API.Controllers
 
             using (var unitOfWork = this.UnitOfWorkService.Create())
             {
-                var tagModel = unitOfWork.Tags
+                var tagModel = await unitOfWork.Tags
                                     .Get()
-                                    .FirstOrDefault(t => t.ID == potentialTag.ID);
+                                    .FirstOrDefaultAsync(t => t.ID == potentialTag.ID);
 
-                if (tagModel == null || unitOfWork.Tags.Get().Any(t => t.Name == potentialTag.Name))
+                if (tagModel == null || await unitOfWork.Tags.Get().AnyAsync(t => t.Name == potentialTag.Name))
                 {
                     return BadRequest();
                 }
@@ -116,20 +121,20 @@ namespace MediaStack_API.Controllers
                 tagModel.Name = potentialTag.Name;
 
                 unitOfWork.Tags.Update(tagModel);
-                unitOfWork.Save();
+                await unitOfWork.SaveAsync();
 
                 return Ok(new BaseResponse(this.Mapper.Map<TagViewModel>(tagModel)));
             }
         }
 
         [HttpDelete]
-        public IActionResult Delete([FromQuery] TagViewModel potentialTag)
+        public async Task<IActionResult> Delete([FromQuery] TagViewModel potentialTag)
         {
             using (var unitOfWork = this.UnitOfWorkService.Create())
             {
-                var tag = unitOfWork.Tags
+                var tag = await unitOfWork.Tags
                                          .Get()
-                                         .FirstOrDefault(t => t.ID == potentialTag.ID);
+                                         .FirstOrDefaultAsync(t => t.ID == potentialTag.ID);
 
                 if (tag == null)
                 {
@@ -137,19 +142,19 @@ namespace MediaStack_API.Controllers
                 }
 
                 unitOfWork.Tags.Delete(tag);
-                unitOfWork.Save();
+                await unitOfWork.SaveAsync();
 
                 return Ok();
             }
         }
 
         [HttpGet("Search")]
-        public async  Task<IActionResult> Search([FromQuery] TagSearchQuery tagsQuery)
+        public async Task<IActionResult> Search([FromQuery] TagSearchQuery tagsQuery)
         {
             using (IUnitOfWork unitOfWork = this.UnitOfWorkService.Create())
             {
                 IQueryable<Tag> query = tagsQuery.GetQuery(unitOfWork);
-                int total = query.Count();
+                int total = await query.CountAsync();
                 var tags = await query
                                  .Skip(tagsQuery.Offset)
                                  .Take(tagsQuery.Count)
