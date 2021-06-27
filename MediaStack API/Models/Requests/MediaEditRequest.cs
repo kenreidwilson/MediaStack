@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Linq;
 using System.Threading.Tasks;
 using MediaStackCore.Data_Access_Layer;
 using MediaStackCore.Models;
@@ -12,13 +13,16 @@ namespace MediaStack_API.Models.Requests
     {
         #region Properties
 
+        [Required]
+        public int? ID { get; set; }
+
         public int? CategoryID { get; set; }
 
         public int? ArtistID { get; set; }
 
         public int? AlbumID { get; set; }
 
-        public List<int> TagIDs { get; set; }
+        public int[] TagIDs { get; set; } = null;
 
         [Range(0, 5)] 
         public int? Score { get; set; }
@@ -31,8 +35,16 @@ namespace MediaStack_API.Models.Requests
 
         #region Methods
 
-        public async Task<Media> UpdateMedia(IUnitOfWork unitOfWork, Media media)
+        public async Task<Media> UpdateMedia(IUnitOfWork unitOfWork)
         {
+            var media = await unitOfWork.Media.Get()
+                                        .Include(m => m.Tags)
+                                        .FirstOrDefaultAsync(m => m.ID == this.ID);
+            if (media == null)
+            {
+                throw new MediaNotFoundException();
+            }
+
             if (this.CategoryID != null)
             {
                 if (!await unitOfWork.Categories.Get().AnyAsync(c => c.ID == this.CategoryID))
@@ -75,15 +87,32 @@ namespace MediaStack_API.Models.Requests
 
             if (this.TagIDs != null)
             {
-                media.Tags.Clear();
-                media.Tags = await unitOfWork.Tags.Get(t => this.TagIDs.Contains(t.ID)).ToListAsync();
-                if (this.TagIDs.Count != media.Tags.Count)
+                List<Tag> newTags = new List<Tag>();
+
+                foreach (int tagId in this.TagIDs)
+                {
+                    try
+                    {
+                        newTags.Add(unitOfWork.Tags.Get().First(t => t.ID == tagId));
+                    }
+                    catch (InvalidOperationException)
+                    {
+                        throw new BadRequestException();
+                    }
+                }
+
+                media.Tags = newTags;
+
+                if (this.TagIDs.Length != media.Tags.Count)
                 {
                     throw new BadRequestException();
                 }
             }
+
             return media;
         }
+
+        public class MediaNotFoundException : Exception { }
 
         public class BadRequestException : Exception { }
 

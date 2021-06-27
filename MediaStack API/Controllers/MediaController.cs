@@ -51,38 +51,15 @@ namespace MediaStack_API.Controllers
 
         #region Methods
 
-        [HttpPost]
-        public async Task<IActionResult> Index([FromBody] MediaSearchQuery searchQuery)
-        {
-            searchQuery ??= new MediaSearchQuery();
-            if (!ModelState.IsValid)
-            {
-                return BadRequest();
-            }
-
-            using (var unitOfWork = this.UnitOfWorkService.Create())
-            {
-                var query = searchQuery.GetQuery(unitOfWork);
-                var total = query.Count();
-                var medias = await query
-                                     .Include(m => m.Tags)
-                                     .Skip(searchQuery.Offset)
-                                     .Take(searchQuery.Count)
-                                     .Select(m => this.Mapper.Map<MediaViewModel>(m))
-                                     .ToListAsync();
-                return Ok(new MediaSearchResponse(medias, searchQuery.Offset, searchQuery.Count, total));
-            }
-        }
-
-        [HttpGet("{id}")]
-        public async Task<IActionResult> Info(int id)
+        [HttpGet]
+        public async Task<IActionResult> Read([FromQuery] MediaViewModel potentialMedia)
         {
             using (var unitOfWork = this.UnitOfWorkService.Create())
             {
                 var media = await unitOfWork.Media
                                       .Get()
                                       .Include(m => m.Tags)
-                                      .FirstOrDefaultAsync(m => m.ID == id);
+                                      .FirstOrDefaultAsync(m => m.ID == potentialMedia.ID);
 
                 if (media == null)
                 {
@@ -93,116 +70,8 @@ namespace MediaStack_API.Controllers
             }
         }
 
-        [HttpPut("{id}/Edit")]
-        public async Task<IActionResult> Edit([FromBody] MediaEditRequest editRequest, int id)
-        {
-            using (var unitOfWork = this.UnitOfWorkService.Create())
-            {
-                if (!ModelState.IsValid)
-                {
-                    return BadRequest();
-                }
-
-                Media media = await unitOfWork.Media.Get().Include(m => m.Tags).FirstOrDefaultAsync(m => m.ID == id);
-                if (media == null)
-                {
-                    return NotFound();
-                }
-
-                Media newMedia;
-                try
-                {
-                    newMedia = await editRequest.UpdateMedia(unitOfWork, media);
-                }
-                catch (MediaEditRequest.BadRequestException)
-                {
-                    return BadRequest();
-                }
-
-                unitOfWork.Media.Update(newMedia);
-                await unitOfWork.SaveAsync();
-
-                /**
-                if (editRequest.CategoryID != null || editRequest.ArtistID != null || editRequest.AlbumID != null)
-                {
-                    newMedia.Path = this.FSController.MoveMedia(
-                        unitOfWork.Media.Get()
-                                  .Include(m => m.Category)
-                                  .Include(m => m.Artist)
-                                  .Include(m => m.Album)
-                                  .First(m => m.ID == newMedia.ID)
-                    ).Substring(this.FSController.MediaDirectory.Length);
-                }
-
-                unitOfWork.Media.Update(newMedia);
-                unitOfWork.Save();
-                */
-
-                return Ok(new BaseResponse(this.Mapper.Map<MediaViewModel>(newMedia)));
-            }
-        }
-
-        [HttpGet("{id}/File")]
-        public async Task<IActionResult> File(int id)
-        {
-            if (id == 0)
-            {
-                return BadRequest();
-            }
-
-            using (var unitOfWork = this.UnitOfWorkService.Create())
-            {
-                var media = await unitOfWork.Media.Get(m => m.ID == id).FirstOrDefaultAsync();
-                if (media == null)
-                {
-                    return NotFound();
-                }
-
-                try
-                {
-                    return File(await this.GetMediaImageBytes(media), media.Type == MediaType.Video ? "video/mp4" : "image/png");
-                }
-                catch (Exception)
-                {
-                    return StatusCode(500);
-                }
-            }
-        }
-
-        [HttpGet("{id}/Thumbnail")]
-        public async Task<IActionResult> Thumbnail(int id)
-        {
-            if (id == 0)
-            {
-                return BadRequest();
-            }
-
-            using (var unitOfWork = this.UnitOfWorkService.Create())
-            {
-                var media = await unitOfWork.Media.Get(m => m.ID == id).FirstOrDefaultAsync();
-                if (media == null)
-                {
-                    return NotFound();
-                }
-
-                try
-                {
-                    if (this.Thumbnailer.HasThumbnail(media) || await this.Thumbnailer.CreateThumbnail(media))
-                    {
-                        return File(await this.GetMediaThumbnailBytes(media), "image/png");
-                    }
-
-                    return File(await this.GetDefaultThumbnailBytes(), "image/png");
-                }
-                catch (Exception)
-                {
-                    return StatusCode(500);
-                }
-            }
-        }
-
-        [HttpPost("Upload")]
-        public async Task<IActionResult> Upload(IFormFile file)
+        [HttpPost]
+        public async Task<IActionResult> Create(IFormFile file)
         {
             if (file == null)
             {
@@ -253,6 +122,135 @@ namespace MediaStack_API.Controllers
             }
 
             return Ok(new BaseResponse(this.Mapper.Map<MediaViewModel>(media)));
+        }
+
+        [HttpPut]
+        public async Task<IActionResult> Update([FromBody] MediaEditRequest editRequest)
+        {
+            using (var unitOfWork = this.UnitOfWorkService.Create())
+            {
+                if (!ModelState.IsValid)
+                {
+                    return BadRequest();
+                }
+
+                Media newMedia;
+                try
+                {
+                    newMedia = await editRequest.UpdateMedia(unitOfWork);
+                }
+                catch (MediaEditRequest.BadRequestException)
+                {
+                    return BadRequest();
+                }
+                catch (MediaEditRequest.MediaNotFoundException)
+                {
+                    return NotFound();
+                }
+
+                unitOfWork.Media.Update(newMedia);
+                await unitOfWork.SaveAsync();
+
+                /**
+                if (editRequest.CategoryID != null || editRequest.ArtistID != null || editRequest.AlbumID != null)
+                {
+                    newMedia.Path = this.FSController.MoveMedia(
+                        unitOfWork.Media.Get()
+                                  .Include(m => m.Category)
+                                  .Include(m => m.Artist)
+                                  .Include(m => m.Album)
+                                  .First(m => m.ID == newMedia.ID)
+                    ).Substring(this.FSController.MediaDirectory.Length);
+                }
+
+                unitOfWork.Media.Update(newMedia);
+                unitOfWork.Save();
+                */
+
+                return Ok(new BaseResponse(this.Mapper.Map<MediaViewModel>(newMedia)));
+            }
+        }
+
+        [HttpPost("Search")]
+        public async Task<IActionResult> Search([FromBody] MediaSearchQuery searchQuery)
+        {
+            searchQuery ??= new MediaSearchQuery();
+            if (!ModelState.IsValid)
+            {
+                return BadRequest();
+            }
+
+            using (var unitOfWork = this.UnitOfWorkService.Create())
+            {
+                var query = searchQuery.GetQuery(unitOfWork);
+                var total = query.Count();
+                var medias = await query
+                                   .Include(m => m.Tags)
+                                   .Skip(searchQuery.Offset)
+                                   .Take(searchQuery.Count)
+                                   .Select(m => this.Mapper.Map<MediaViewModel>(m))
+                                   .ToListAsync();
+                return Ok(new MediaSearchResponse(medias, searchQuery.Offset, searchQuery.Count, total));
+            }
+        }
+
+        [HttpGet("File")]
+        public async Task<IActionResult> File([FromQuery] MediaViewModel potentialMedia)
+        {
+            if (potentialMedia.ID == 0)
+            {
+                return BadRequest();
+            }
+
+            using (var unitOfWork = this.UnitOfWorkService.Create())
+            {
+                var media = await unitOfWork.Media.Get(m => m.ID == potentialMedia.ID).FirstOrDefaultAsync();
+                if (media == null)
+                {
+                    return NotFound();
+                }
+
+                try
+                {
+                    return File(await this.GetMediaImageBytes(media), media.Type == MediaType.Video ? "video/mp4" : "image/png");
+                }
+                catch (Exception)
+                {
+                    return StatusCode(500);
+                }
+            }
+        }
+
+        [HttpGet("Thumbnail")]
+        public async Task<IActionResult> Thumbnail([FromQuery] MediaViewModel potentialMedia)
+        {
+            if (potentialMedia.ID == 0)
+            {
+                return BadRequest();
+            }
+
+            using (var unitOfWork = this.UnitOfWorkService.Create())
+            {
+                var media = await unitOfWork.Media.Get(m => m.ID == potentialMedia.ID).FirstOrDefaultAsync();
+                if (media == null)
+                {
+                    return NotFound();
+                }
+
+                try
+                {
+                    if (this.Thumbnailer.HasThumbnail(media) || await this.Thumbnailer.CreateThumbnail(media))
+                    {
+                        return File(await this.GetMediaThumbnailBytes(media), "image/png");
+                    }
+
+                    return File(await this.GetDefaultThumbnailBytes(), "image/png");
+                }
+                catch (Exception)
+                {
+                    return StatusCode(500);
+                }
+            }
         }
 
         protected async Task<byte[]> GetMediaImageBytes(Media media)
