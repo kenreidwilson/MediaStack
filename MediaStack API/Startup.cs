@@ -1,4 +1,5 @@
 using MediaStack_API.Infrastructure;
+using MediaStack_API.Middleware;
 using MediaStack_API.Services.Thumbnailer;
 using MediaStackCore.Controllers;
 using MediaStackCore.Data_Access_Layer;
@@ -64,6 +65,8 @@ namespace MediaStack_API
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
+            app.UseAPILogging();
+
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
