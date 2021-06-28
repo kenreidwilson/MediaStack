@@ -23,6 +23,8 @@ namespace MediaStack_API.Controllers
 
         protected IMapper Mapper { get; }
 
+        private static readonly object WriteLock = new();
+
         #endregion
 
         #region Constructors
@@ -68,28 +70,27 @@ namespace MediaStack_API.Controllers
         [HttpPost]
         public async Task<IActionResult> Create([FromQuery] TagViewModel potentialTag)
         {
-            if (potentialTag.Name == null)
+            if (!ModelState.IsValid || potentialTag.ID != 0)
             {
                 return BadRequest();
             }
 
+            Tag createdTag;
             using (var unitOfWork = this.UnitOfWorkService.Create())
             {
-                if (!ModelState.IsValid || potentialTag.ID != 0)
+                lock (WriteLock)
                 {
-                    return BadRequest();
-                }
+                    if (unitOfWork.Tags.Get().Any(t => t.Name == potentialTag.Name))
+                    {
+                        return BadRequest(new BaseResponse(null, "Duplicate."));
+                    }
 
-                if (unitOfWork.Tags.Get().Any(t => t.Name == potentialTag.Name))
-                {
-                    return BadRequest(new BaseResponse(null, "Duplicate."));
+                    unitOfWork.Tags.Insert(this.Mapper.Map<Tag>(potentialTag));
+                    unitOfWork.Save();
                 }
-
-                await unitOfWork.Tags.InsertAsync(this.Mapper.Map<Tag>(potentialTag));
-                await unitOfWork.SaveAsync();
-                var createdTag = unitOfWork.Tags.Get(t => t.Name == potentialTag.Name).First();
-                return Ok(new BaseResponse(this.Mapper.Map<TagViewModel>(createdTag)));
+                createdTag = await unitOfWork.Tags.Get(t => t.Name == potentialTag.Name).FirstAsync();
             }
+            return Ok(new BaseResponse(this.Mapper.Map<TagViewModel>(createdTag)));
         }
 
         [HttpPut]
@@ -106,16 +107,19 @@ namespace MediaStack_API.Controllers
                                     .Get()
                                     .FirstOrDefaultAsync(t => t.ID == potentialTag.ID);
 
-                if (tagModel == null || await unitOfWork.Tags.Get().AnyAsync(t => t.Name == potentialTag.Name))
+                lock (WriteLock)
                 {
-                    return BadRequest();
+                    if (tagModel == null || unitOfWork.Tags.Get().Any(t => t.Name == potentialTag.Name))
+                    {
+                        return BadRequest();
+                    }
+
+                    tagModel.Name = potentialTag.Name;
+
+                    unitOfWork.Tags.Update(tagModel);
+                    unitOfWork.Save();
                 }
-
-                tagModel.Name = potentialTag.Name;
-
-                unitOfWork.Tags.Update(tagModel);
-                await unitOfWork.SaveAsync();
-
+                
                 return Ok(new BaseResponse(this.Mapper.Map<TagViewModel>(tagModel)));
             }
         }

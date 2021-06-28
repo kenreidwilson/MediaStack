@@ -22,6 +22,8 @@ namespace MediaStack_API.Controllers
 
         protected IMapper Mapper { get; }
 
+        private static readonly object WriteLock = new();
+
         #endregion
 
         #region Constructors
@@ -64,20 +66,26 @@ namespace MediaStack_API.Controllers
         {
             using (var unitOfWork = this.UnitOfWorkService.Create())
             {
-                if (!ModelState.IsValid || album.ID != 0 || !unitOfWork.Artists.Get().Any(a => a.ID == album.ArtistID))
+                if (!ModelState.IsValid || album.ID != 0 || !await unitOfWork.Artists.Get().AnyAsync(a => a.ID == album.ArtistID))
                 {
                     return BadRequest();
                 }
 
-                if (unitOfWork.Albums.Get().Any(a => a.ArtistID == album.ArtistID && a.Name == album.Name))
+                Album createdAlbum;
+                lock (WriteLock)
                 {
-                    return BadRequest(new BaseResponse(null, "Duplicate."));
-                }
+                    if (unitOfWork.Albums.Get().Any(a => a.ArtistID == album.ArtistID && a.Name == album.Name))
+                    {
+                        return BadRequest(new BaseResponse(null, "Duplicate."));
+                    }
 
-                await unitOfWork.Albums.InsertAsync(this.Mapper.Map<Album>(album));
-                await unitOfWork.SaveAsync();
-                var createdAlbum = unitOfWork.Albums.Get(a => a.ArtistID == album.ArtistID && a.Name == album.Name)
+                    unitOfWork.Albums.Insert(this.Mapper.Map<Album>(album));
+                    unitOfWork.Save();
+                    createdAlbum = unitOfWork.Albums
+                                             .Get(a => a.ArtistID == album.ArtistID && a.Name == album.Name)
                                              .First();
+                }
+                
                 return Ok(new BaseResponse(this.Mapper.Map<AlbumViewModel>(createdAlbum)));
             }
         }

@@ -22,6 +22,8 @@ namespace MediaStack_API.Controllers
 
         protected IMapper Mapper { get; }
 
+        private static readonly object WriteLock = new();
+
         #endregion
 
         #region Constructors
@@ -56,23 +58,27 @@ namespace MediaStack_API.Controllers
         [HttpPost]
         public async Task<IActionResult> Create([FromQuery] CategoryViewModel category)
         {
+            if (!ModelState.IsValid || category.ID != 0)
+            {
+                return BadRequest();
+            }
+
+            Category createdCategory;
             using (var unitOfWork = this.UnitOfWorkService.Create())
             {
-                if (!ModelState.IsValid || category.ID != 0)
+                lock (WriteLock)
                 {
-                    return BadRequest();
-                }
+                    if (unitOfWork.Categories.Get().Any(c => c.Name == category.Name))
+                    {
+                        return BadRequest(new BaseResponse(null, "Duplicate."));
+                    }
 
-                if (await unitOfWork.Categories.Get().AnyAsync(c => c.Name == category.Name))
-                {
-                    return BadRequest(new BaseResponse(null, "Duplicate."));
+                    unitOfWork.Categories.Insert(this.Mapper.Map<Category>(category));
+                    unitOfWork.Save();
                 }
-
-                await unitOfWork.Categories.InsertAsync(this.Mapper.Map<Category>(category));
-                await unitOfWork.SaveAsync();
-                var createdCategory = await unitOfWork.Categories.Get(c => c.Name == category.Name).FirstAsync();
-                return Ok(new BaseResponse(this.Mapper.Map<CategoryViewModel>(createdCategory)));
+                createdCategory = await unitOfWork.Categories.Get(c => c.Name == category.Name).FirstAsync();
             }
+            return Ok(new BaseResponse(this.Mapper.Map<CategoryViewModel>(createdCategory)));
         }
 
         [HttpGet("Search")]

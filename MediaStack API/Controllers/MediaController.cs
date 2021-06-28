@@ -32,6 +32,8 @@ namespace MediaStack_API.Controllers
 
         protected IThumbnailer Thumbnailer { get; }
 
+        private static readonly object WriteLock = new();
+
         #endregion
 
         #region Constructors
@@ -100,25 +102,28 @@ namespace MediaStack_API.Controllers
 
             using (IUnitOfWork unitOfWork = this.UnitOfWorkService.Create())
             {
-                if (await unitOfWork.Media.Get().AnyAsync(m => m.Hash == media.Hash))
+                lock (WriteLock)
                 {
-                    return BadRequest(new BaseResponse(null, "Duplicate"));
-                }
+                    if (unitOfWork.Media.Get().Any(m => m.Hash == media.Hash))
+                    {
+                        return BadRequest(new BaseResponse(null, "Duplicate"));
+                    }
 
-                string filePath = $"{media.Hash}";
-                while (System.IO.File.Exists(filePath))
-                {
-                    filePath += "_";
-                }
+                    string filePath = $"{media.Hash}";
+                    while (System.IO.File.Exists(filePath))
+                    {
+                        filePath += "_";
+                    }
 
-                media.Path = filePath;
+                    media.Path = filePath;
 
-                await using (var stream = new FileStream(filePath, FileMode.Create))
-                {
-                    await file.CopyToAsync(stream);
+                    using (var stream = new FileStream(filePath, FileMode.Create))
+                    {
+                        file.CopyTo(stream);
+                    }
+                    unitOfWork.Media.Insert(media);
+                    unitOfWork.Save();
                 }
-                await unitOfWork.Media.InsertAsync(media);
-                await unitOfWork.SaveAsync();
             }
 
             return Ok(new BaseResponse(this.Mapper.Map<MediaViewModel>(media)));
@@ -127,14 +132,14 @@ namespace MediaStack_API.Controllers
         [HttpPut]
         public async Task<IActionResult> Update([FromBody] MediaEditRequest editRequest)
         {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest();
+            }
+
+            Media newMedia;
             using (var unitOfWork = this.UnitOfWorkService.Create())
             {
-                if (!ModelState.IsValid)
-                {
-                    return BadRequest();
-                }
-
-                Media newMedia;
                 try
                 {
                     newMedia = await editRequest.UpdateMedia(unitOfWork);
@@ -150,25 +155,9 @@ namespace MediaStack_API.Controllers
 
                 unitOfWork.Media.Update(newMedia);
                 await unitOfWork.SaveAsync();
-
-                /**
-                if (editRequest.CategoryID != null || editRequest.ArtistID != null || editRequest.AlbumID != null)
-                {
-                    newMedia.Path = this.FSController.MoveMedia(
-                        unitOfWork.Media.Get()
-                                  .Include(m => m.Category)
-                                  .Include(m => m.Artist)
-                                  .Include(m => m.Album)
-                                  .First(m => m.ID == newMedia.ID)
-                    ).Substring(this.FSController.MediaDirectory.Length);
-                }
-
-                unitOfWork.Media.Update(newMedia);
-                unitOfWork.Save();
-                */
-
-                return Ok(new BaseResponse(this.Mapper.Map<MediaViewModel>(newMedia)));
             }
+
+            return Ok(new BaseResponse(this.Mapper.Map<MediaViewModel>(newMedia)));
         }
 
         [HttpPost("Search")]
@@ -218,6 +207,39 @@ namespace MediaStack_API.Controllers
                 {
                     return StatusCode(500);
                 }
+            }
+        }
+
+        [HttpPut("File")]
+        public async Task<IActionResult> UpdateFile([FromBody] MediaEditRequest editRequest)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest();
+            }
+
+            await this.Update(editRequest);
+            using (var unitOfWork = this.UnitOfWorkService.Create())
+            {
+                var newMedia = unitOfWork.Media.Get().First(m => m.ID == editRequest.ID);
+                lock (WriteLock)
+                {
+                    
+                    if (editRequest.CategoryID != null || editRequest.ArtistID != null || editRequest.AlbumID != null)
+                    {
+                        newMedia.Path = this.FSController.MoveMedia(
+                            unitOfWork.Media.Get()
+                                      .Include(m => m.Category)
+                                      .Include(m => m.Artist)
+                                      .Include(m => m.Album)
+                                      .First(m => m.ID == newMedia.ID)
+                        ).Substring(this.FSController.MediaDirectory.Length);
+                    }
+
+                    unitOfWork.Media.Update(newMedia);
+                    unitOfWork.Save();
+                }
+                return Ok(new BaseResponse(this.Mapper.Map<MediaViewModel>(newMedia)));
             }
         }
 
