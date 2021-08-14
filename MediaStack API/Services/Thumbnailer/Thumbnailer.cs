@@ -93,6 +93,7 @@ namespace MediaStack_API.Services.Thumbnailer
                         image.Thumbnail(new MagickGeometry(this.thumbnailWidth, this.thumbnailHeight));
                         image.Write(this.DetermineThumbnailLocation(media));
                     }
+
                     return true;
                 }
                 catch (OutOfMemoryException)
@@ -100,6 +101,10 @@ namespace MediaStack_API.Services.Thumbnailer
                     return false;
                 }
                 catch (IOException)
+                {
+                    return false;
+                }
+                catch (MagickBlobErrorException)
                 {
                     return false;
                 }
