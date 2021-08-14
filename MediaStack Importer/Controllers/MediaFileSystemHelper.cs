@@ -20,7 +20,13 @@ namespace MediaStack_Importer.Controllers
 
         #region Properties
 
-        protected IDictionary<string, string> HashCache { get; }
+        private IDictionary<string, string> hashCache { get; }
+
+        private IDictionary<string, int> categoryNameIdCache { get; }
+
+        private IDictionary<string, int> artistNameIdCache { get; }
+
+        private IDictionary<int, IDictionary<string, int>> albumArtistIdAlbumNameIdCache { get; }
 
         #endregion
 
@@ -29,7 +35,10 @@ namespace MediaStack_Importer.Controllers
         public MediaFileSystemHelper(ILogger logger)
         {
             this.Logger = logger;
-            this.HashCache = new ConcurrentDictionary<string, string>();
+            this.hashCache = new ConcurrentDictionary<string, string>();
+            this.categoryNameIdCache = new ConcurrentDictionary<string, int>();
+            this.artistNameIdCache = new ConcurrentDictionary<string, int>();
+            this.albumArtistIdAlbumNameIdCache = new ConcurrentDictionary<int, IDictionary<string, int>>();
         }
 
         #endregion
@@ -78,15 +87,15 @@ namespace MediaStack_Importer.Controllers
 
         public string GetFileHash(string filePath, FileStream stream = null)
         {
-            if (!this.HashCache.ContainsKey(this.GetRelativePath(filePath)))
+            if (!this.hashCache.ContainsKey(this.GetRelativePath(filePath)))
             {
                 using (stream ??= File.OpenRead(filePath))
                 {
-                    this.HashCache[this.GetRelativePath(filePath)] = this.CalculateHash(stream);
+                    this.hashCache[this.GetRelativePath(filePath)] = this.CalculateHash(stream);
                 }
             }
 
-            return this.HashCache[this.GetRelativePath(filePath)];
+            return this.hashCache[this.GetRelativePath(filePath)];
         }
 
         public string GetRelativePath(string path)
@@ -129,20 +138,70 @@ namespace MediaStack_Importer.Controllers
             if (mediaReferences.Category != null)
             {
                 string categoryName = mediaReferences.Category;
-                media.CategoryID = unitOfWork.Categories.Get().FirstOrDefault(c => c.Name == categoryName)?.ID;
+                media.CategoryID = this.getCategoryIdByName(categoryName, unitOfWork);
                 if (media.CategoryID != null && mediaReferences.Artist != null)
                 {
                     string artistName = mediaReferences.Artist;
-                    media.ArtistID = unitOfWork.Artists.Get().FirstOrDefault(a => a.Name == artistName)?.ID;
+                    media.ArtistID = this.getArtistIdByName(artistName, unitOfWork);
                     if (media.ArtistID != null && mediaReferences.Album != null)
                     {
                         string albumName = mediaReferences.Album;
-                        media.AlbumID = unitOfWork.Albums.Get()
-                                                  .FirstOrDefault(a =>
-                                                      a.Name == albumName && a.ArtistID == media.ArtistID)?.ID;
+                        media.AlbumID = this.getAlbumIdByNameAndArtistId((int)media.ArtistID, albumName, unitOfWork);
                     }
                 }
             }
+        }
+
+        private int? getCategoryIdByName(string categoryName, IUnitOfWork unitOfWork)
+        {
+            if (this.categoryNameIdCache.ContainsKey(categoryName))
+            {
+                return this.categoryNameIdCache[categoryName];
+            }
+
+            int? id = unitOfWork.Categories.Get().FirstOrDefault(c => c.Name == categoryName)?.ID;
+            if (id != null)
+            {
+                this.categoryNameIdCache[categoryName] = (int)id;
+            }
+            return id;
+        }
+
+        private int? getArtistIdByName(string artistName, IUnitOfWork unitOfWork)
+        {
+            if (this.artistNameIdCache.ContainsKey(artistName))
+            {
+                return this.artistNameIdCache[artistName];
+            }
+
+            int? id = unitOfWork.Artists.Get().FirstOrDefault(c => c.Name == artistName)?.ID;
+            if (id != null)
+            {
+                this.artistNameIdCache[artistName] = (int)id;
+            }
+            return id;
+        }
+
+        private int? getAlbumIdByNameAndArtistId(int artistId, string albumName, IUnitOfWork unitOfWork)
+        {
+            if (this.albumArtistIdAlbumNameIdCache.ContainsKey(artistId) && this.albumArtistIdAlbumNameIdCache[artistId].ContainsKey(albumName))
+            {
+                return this.albumArtistIdAlbumNameIdCache[artistId][albumName];
+            }
+            int? id = unitOfWork.Albums.Get()
+                                .FirstOrDefault(a =>
+                                    a.Name == albumName && a.ArtistID == artistId)?.ID;
+
+            if (id != null)
+            {
+                if (!this.albumArtistIdAlbumNameIdCache.ContainsKey(artistId))
+                {
+                    this.albumArtistIdAlbumNameIdCache[artistId] = new ConcurrentDictionary<string, int>();
+                }
+                this.albumArtistIdAlbumNameIdCache[artistId][albumName] = (int)id;
+            }
+
+            return id;
         }
 
         public class DuplicateMediaException : Exception { }
