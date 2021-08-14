@@ -40,27 +40,22 @@ namespace MediaStack_API.Controllers
         #region Methods
 
         [HttpGet]
-        public async Task<IActionResult> Read([FromQuery] TagViewModel potentialTag)
+        public async Task<IActionResult> Read([FromQuery] TagViewModel tagVm)
         {
-            if (potentialTag.ID == 0 && potentialTag.Name == null)
+            if (tagVm.ID == 0 && tagVm.Name == null)
             {
-                return BadRequest("You must provide a valid Tag ID or Name.");
+                return BadRequest(new BaseResponse(null, "You must provide a valid Tag ID or Name."));
             }
 
             using (var unitOfWork = this.UnitOfWorkService.Create())
             {
-                Tag tag = null;
-
-                if (potentialTag.Name != null)
-                {
-                    tag = await unitOfWork.Tags
-                                    .Get()
-                                    .FirstOrDefaultAsync(t => t.ID == potentialTag.ID || t.Name == potentialTag.Name);
-                }
+                Tag tag = await unitOfWork.Tags
+                                          .Get()
+                                          .FirstOrDefaultAsync(t => t.ID == tagVm.ID || t.Name == tagVm.Name);
 
                 if (tag == null)
                 {
-                    return NotFound();
+                    return BadRequest(new BaseResponse(null, "Not Found"));
                 }
 
                 return Ok(new BaseResponse(this.Mapper.Map<TagViewModel>(tag)));
@@ -68,29 +63,29 @@ namespace MediaStack_API.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Create([FromQuery] TagViewModel potentialTag)
+        public async Task<IActionResult> Create([FromQuery] TagViewModel tagVm)
         {
-            if (!ModelState.IsValid || potentialTag.ID != 0)
+            if (!ModelState.IsValid || tagVm.ID != 0)
             {
                 return BadRequest();
             }
 
-            Tag createdTag;
             using (var unitOfWork = this.UnitOfWorkService.Create())
             {
-                lock (WriteLock)
-                {
-                    if (unitOfWork.Tags.Get().Any(t => t.Name == potentialTag.Name))
-                    {
-                        return BadRequest(new BaseResponse(null, "Duplicate."));
-                    }
+                Tag tag = await unitOfWork.Tags.Get().FirstOrDefaultAsync(t => t.Name == tagVm.Name);
 
-                    unitOfWork.Tags.Insert(this.Mapper.Map<Tag>(potentialTag));
-                    unitOfWork.Save();
+                if (tag == null)
+                {
+                    lock (WriteLock)
+                    {
+                        unitOfWork.Tags.Insert(this.Mapper.Map<Tag>(tagVm));
+                        unitOfWork.Save();
+                    }
+                    tag = await unitOfWork.Tags.Get(t => t.Name == tagVm.Name).FirstAsync();
                 }
-                createdTag = await unitOfWork.Tags.Get(t => t.Name == potentialTag.Name).FirstAsync();
+
+                return Ok(new BaseResponse(this.Mapper.Map<TagViewModel>(tag)));
             }
-            return Ok(new BaseResponse(this.Mapper.Map<TagViewModel>(createdTag)));
         }
 
         [HttpPut]

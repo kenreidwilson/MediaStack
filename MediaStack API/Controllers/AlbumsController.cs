@@ -62,31 +62,30 @@ namespace MediaStack_API.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Create([FromQuery] AlbumViewModel album)
+        public async Task<IActionResult> Create([FromQuery] AlbumViewModel albumVm)
         {
             using (var unitOfWork = this.UnitOfWorkService.Create())
             {
-                if (!ModelState.IsValid || album.ID != 0 || !await unitOfWork.Artists.Get().AnyAsync(a => a.ID == album.ArtistID))
+                if (!ModelState.IsValid || albumVm.ID != 0 || !await unitOfWork.Artists.Get().AnyAsync(a => a.ID == albumVm.ArtistID))
                 {
                     return BadRequest();
                 }
 
-                Album createdAlbum;
-                lock (WriteLock)
+                Album album = await unitOfWork.Albums.Get()
+                                                 .FirstOrDefaultAsync(a => a.ArtistID == albumVm.ArtistID && a.Name == albumVm.Name);
+                if (album == null)
                 {
-                    if (unitOfWork.Albums.Get().Any(a => a.ArtistID == album.ArtistID && a.Name == album.Name))
+                    lock (WriteLock)
                     {
-                        return BadRequest(new BaseResponse(null, "Duplicate."));
+                        unitOfWork.Albums.Insert(this.Mapper.Map<Album>(albumVm));
+                        unitOfWork.Save();
                     }
-
-                    unitOfWork.Albums.Insert(this.Mapper.Map<Album>(album));
-                    unitOfWork.Save();
-                    createdAlbum = unitOfWork.Albums
-                                             .Get(a => a.ArtistID == album.ArtistID && a.Name == album.Name)
-                                             .First();
+                    album = await unitOfWork.Albums
+                                      .Get(a => a.ArtistID == albumVm.ArtistID && a.Name == albumVm.Name)
+                                      .FirstAsync();
                 }
-                
-                return Ok(new BaseResponse(this.Mapper.Map<AlbumViewModel>(createdAlbum)));
+
+                return Ok(new BaseResponse(this.Mapper.Map<AlbumViewModel>(album)));
             }
         }
 

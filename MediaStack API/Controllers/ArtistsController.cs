@@ -56,29 +56,27 @@ namespace MediaStack_API.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Create([FromQuery] ArtistViewModel artist)
+        public async Task<IActionResult> Create([FromQuery] ArtistViewModel artistVm)
         {
-            if (!ModelState.IsValid || artist.ID != 0)
+            if (!ModelState.IsValid || artistVm.ID != 0)
             {
                 return BadRequest();
             }
 
-            Artist createdArtist;
             using (var unitOfWork = this.UnitOfWorkService.Create())
             {
-                lock (WriteLock)
+                Artist artist = await unitOfWork.Artists.Get().FirstOrDefaultAsync(a => a.Name == artistVm.Name);
+                if (artist == null)
                 {
-                    if (unitOfWork.Artists.Get().Any(a => a.Name == artist.Name))
+                    lock (WriteLock)
                     {
-                        return BadRequest(new BaseResponse(null, "Duplicate."));
+                        unitOfWork.Artists.Insert(this.Mapper.Map<Artist>(artistVm));
+                        unitOfWork.Save();
                     }
-
-                    unitOfWork.Artists.Insert(this.Mapper.Map<Artist>(artist));
-                    unitOfWork.Save();
+                    artist = await unitOfWork.Artists.Get(t => t.Name == artistVm.Name).FirstAsync();
                 }
-                createdArtist = await unitOfWork.Artists.Get(t => t.Name == artist.Name).FirstAsync();
+                return Ok(new BaseResponse(this.Mapper.Map<ArtistViewModel>(artist)));
             }
-            return Ok(new BaseResponse(this.Mapper.Map<ArtistViewModel>(createdArtist)));
         }
 
         [HttpGet("Search")]
