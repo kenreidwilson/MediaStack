@@ -65,7 +65,7 @@ namespace MediaStack_API.Models.Requests
 
             if (this.AlbumID != null)
             {
-                if (media.CategoryID == null || media.ArtistID == null || await unitOfWork.Albums.Get().AnyAsync(a => a.ID == this.AlbumID))
+                if (media.CategoryID == null || media.ArtistID == null || !await unitOfWork.Albums.Get().AnyAsync(a => a.ID == this.AlbumID))
                 {
                     throw new BadRequestException();
                 }
