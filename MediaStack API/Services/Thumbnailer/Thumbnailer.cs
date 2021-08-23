@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.IO.Abstractions;
 using System.Threading.Tasks;
 using ImageMagick;
 using MediaStackCore.Controllers;
@@ -18,17 +19,19 @@ namespace MediaStack_API.Services.Thumbnailer
 
         private readonly int thumbnailWidth = 125;
 
-        IMediaFileSystemController FSController { get; }
+        protected IFileSystem FileSystem { get; }
+
+        protected IFileSystemController FSController { get; }
 
         #endregion
 
         #region Methods
 
-        public Thumbnailer(IMediaFileSystemController controller)
+        public Thumbnailer(IFileSystem fileSystem, IFileSystemController controller)
         {
             if (string.IsNullOrEmpty(this.ThumbnailDirectory))
             {
-                throw new InvalidOperationException("Invalid Media Directory");
+                throw new InvalidOperationException("Invalid Thumbnail Directory");
             }
 
             if (Environment.GetEnvironmentVariable("FFMPEG") != null)
@@ -41,10 +44,11 @@ namespace MediaStack_API.Services.Thumbnailer
                 this.ThumbnailDirectory += Path.DirectorySeparatorChar;
             }
 
+            this.FileSystem = fileSystem;
             this.FSController = controller;
         }
 
-        public bool HasThumbnail(Media media) => File.Exists(this.GetThumbnailFullPath(media));
+        public bool HasThumbnail(Media media) => this.FileSystem.File.Exists(this.GetThumbnailFullPath(media));
 
         public virtual async Task<bool> CreateThumbnail(Media media)
         {
@@ -71,14 +75,24 @@ namespace MediaStack_API.Services.Thumbnailer
             }
         }
 
-        public string GetThumbnailFullPath(Media media)
+        public byte[] GetMediaThumbnailBytes(Media media)
         {
-            return this.DetermineThumbnailLocation(media);
+            throw new NotImplementedException();
         }
 
-        public string GetDefaultThumbnailFullPath()
+        public Task<byte[]> GetMediaThumbnailBytesAsync(Media media)
         {
-            return $@"{this.ThumbnailDirectory}default";
+            throw new NotImplementedException();
+        }
+
+        public byte[] GetDefaultThumbnailBytes()
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<byte[]> GetDefaultThumbnailBytesAsync()
+        {
+            throw new NotImplementedException();
         }
 
         protected async Task<bool> CreateThumbnailFromImage(Media media)
@@ -87,8 +101,7 @@ namespace MediaStack_API.Services.Thumbnailer
             {
                 try
                 {
-                    var file = new FileInfo(this.FSController.GetMediaFullPath(media));
-                    using (MagickImage image = new MagickImage(file))
+                    using (MagickImage image = new MagickImage(this.FSController.GetMediaData(media).GetDataStream()))
                     {
                         image.Thumbnail(new MagickGeometry(this.thumbnailWidth, this.thumbnailHeight));
                         image.Write(this.DetermineThumbnailLocation(media));
@@ -114,7 +127,7 @@ namespace MediaStack_API.Services.Thumbnailer
         protected async Task<bool> CreateThumbnailFromVideo(Media media)
         {
             var result = FFmpeg.Conversions.New()
-                               .AddParameter($"-i \"{this.FSController.GetMediaFullPath(media)}\"")
+                               .AddParameter($"-i \"{this.FSController.GetMediaData(media).Path}\"")
                                .AddParameter("-ss 00:00:01.000")
                                .AddParameter("-vframes 1")
                                .AddParameter("-f image2")
@@ -125,9 +138,19 @@ namespace MediaStack_API.Services.Thumbnailer
             return result.IsCompletedSuccessfully;
         }
 
-        protected string DetermineThumbnailLocation(Media media)
+        private string DetermineThumbnailLocation(Media media)
         {
             return $@"{this.ThumbnailDirectory}{media.Hash}";
+        }
+
+        private string GetThumbnailFullPath(Media media)
+        {
+            return this.DetermineThumbnailLocation(media);
+        }
+
+        private string GetDefaultThumbnailFullPath()
+        {
+            return $@"{this.ThumbnailDirectory}default";
         }
 
         #endregion

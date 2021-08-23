@@ -18,9 +18,13 @@ namespace MediaStack_API.Services.Thumbnailer
 
         public Task<bool> CreateThumbnail(Media media);
 
-        public string GetThumbnailFullPath(Media media);
+        public byte[] GetMediaThumbnailBytes(Media media);
 
-        public string GetDefaultThumbnailFullPath();
+        public Task<byte[]> GetMediaThumbnailBytesAsync(Media media);
+
+        public byte[] GetDefaultThumbnailBytes();
+
+        public Task<byte[]> GetDefaultThumbnailBytesAsync();
 
         public class MediaTooLargeException : Exception { }
 

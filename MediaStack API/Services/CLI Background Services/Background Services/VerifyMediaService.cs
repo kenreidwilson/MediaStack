@@ -1,4 +1,4 @@
-﻿using System.IO;
+﻿using System;
 using System.Linq;
 using MediaStackCore.Controllers;
 using MediaStackCore.Data_Access_Layer;
@@ -6,9 +6,9 @@ using MediaStackCore.Models;
 using MediaStackCore.Services.UnitOfWorkService;
 using Microsoft.Extensions.Logging;
 
-namespace MediaStack_Importer.Services.ScannerService.ScannerJobs
+namespace MediaStack_API.Services.CLI_Background_Services.Background_Services
 {
-    public class VerifyMediaJob : BatchScannerJob<Media>
+    public class VerifyMediaService : BatchedParallelService<Media>
     {
         #region Data members
 
@@ -20,7 +20,7 @@ namespace MediaStack_Importer.Services.ScannerService.ScannerJobs
 
         #region Constructors
 
-        public VerifyMediaJob(ILogger logger, IUnitOfWorkService unitOfWorkService, IFileSystemController helper)
+        public VerifyMediaService(ILogger logger, IUnitOfWorkService unitOfWorkService, IFileSystemController helper)
             : base(logger)
         {
             this.UnitOfWorkService = unitOfWorkService;
@@ -31,10 +31,10 @@ namespace MediaStack_Importer.Services.ScannerService.ScannerJobs
 
         #region Methods
 
-        public override void Run()
+        public override void Execute()
         {
             using var unitOfWork = this.UnitOfWorkService.Create();
-            Execute(unitOfWork.Media.Get(m => m.Path != null).ToList());
+            ExecuteWithData(unitOfWork.Media.Get(m => m.Path != null).ToList());
         }
 
         protected override void Save()
@@ -65,39 +65,44 @@ namespace MediaStack_Importer.Services.ScannerService.ScannerJobs
         protected Media VerifyMedia(Media media)
         {
             using var unitOfWork = this.UnitOfWorkService.Create();
-            if (!File.Exists(this.fileSystemFSHelper.GetMediaFullPath(media)))
+            if (this.fileSystemFSHelper.DoesMediaFileExist(media))
             {
                 unitOfWork.DisableMedia(media);
                 return media;
             }
 
-            var newHash = this.fileSystemFSHelper.Hasher.GetFileHash(this.fileSystemFSHelper.GetMediaFullPath(media));
-            if (newHash != media.Hash)
+            var currentHash = this.fileSystemFSHelper.Hasher.CalculateHash(this.fileSystemFSHelper.GetMediaData(media).GetDataStream());
+            if (currentHash != media.Hash)
             {
-                return this.HandleMediaHashChange(media, unitOfWork, newHash);
+                return this.HandleMediaHashChange(media, currentHash, unitOfWork);
             }
 
             return null;
         }
 
-        protected Media HandleMediaHashChange(Media media, IUnitOfWork unitOfWork, string newHash)
+        protected Media HandleMediaHashChange(Media media, string newHash, IUnitOfWork unitOfWork)
         {
-            var path = this.fileSystemFSHelper.GetMediaFullPath(media);
             unitOfWork.DisableMedia(media);
             this.addMedia(media);
             var otherMedia = unitOfWork.Media.Get().FirstOrDefault(m => m.Hash == newHash);
             if (otherMedia == null)
             {
-                return this.fileSystemFSHelper.CreateNewMedia(path, unitOfWork);
+                return this.createMedia(this.fileSystemFSHelper.GetMediaData(media), unitOfWork);
             }
 
-            return this.HandleMovedMedia(otherMedia, path, unitOfWork);
+            return this.HandleMovedMedia(otherMedia);
         }
 
-        protected Media HandleMovedMedia(Media media, string newPath, IUnitOfWork unitOfWork)
+        protected Media HandleMovedMedia(Media media)
         {
-            media.Path = this.fileSystemFSHelper.GetRelativePath(newPath);
+            media.Path = this.fileSystemFSHelper.GetMediaDataRelativePath(
+                this.fileSystemFSHelper.GetMediaData(media));
             return media;
+        }
+
+        private Media createMedia(MediaData mediaData, IUnitOfWork unitOfWork)
+        {
+            throw new NotImplementedException();
         }
 
         private void addMedia(Media media)

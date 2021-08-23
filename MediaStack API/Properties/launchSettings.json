@@ -11,6 +11,7 @@
   "profiles": {
     "MediaStack_API": {
       "commandName": "Project",
+      "commandLineArgs": "/createSections True",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       },

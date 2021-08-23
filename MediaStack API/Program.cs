@@ -3,6 +3,8 @@ using System.IO;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Hosting;
 using MediaStackCore.Utility;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 
 namespace MediaStack_API
 {
@@ -18,7 +20,17 @@ namespace MediaStack_API
             Host.CreateDefaultBuilder(args)
                 .ConfigureWebHostDefaults(webBuilder =>
                 {
+                    webBuilder.UseConfiguration(
+                        new ConfigurationBuilder()
+                            .AddCommandLine(args)
+                            .Build()
+                    );
                     webBuilder.UseStartup<Startup>();
+                })
+                .ConfigureLogging(logging =>
+                {
+                    logging.ClearProviders();
+                    logging.AddConsole();
                 });
     }
 }

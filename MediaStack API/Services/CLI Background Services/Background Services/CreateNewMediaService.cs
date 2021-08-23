@@ -1,13 +1,13 @@
-﻿using System.IO;
+﻿using System;
 using System.Linq;
 using MediaStackCore.Controllers;
 using MediaStackCore.Models;
 using MediaStackCore.Services.UnitOfWorkService;
 using Microsoft.Extensions.Logging;
 
-namespace MediaStack_Importer.Services.ScannerService.ScannerJobs
+namespace MediaStack_API.Services.CLI_Background_Services.Background_Services
 {
-    public class CreateNewMediaJob : BatchScannerJob<Media>
+    public class CreateNewMediaService : BatchedParallelService<Media>
     {
         #region Data members
 
@@ -19,7 +19,7 @@ namespace MediaStack_Importer.Services.ScannerService.ScannerJobs
 
         #region Constructors
 
-        public CreateNewMediaJob(ILogger logger, IUnitOfWorkService unitOfWorkService,
+        public CreateNewMediaService(ILogger logger, IUnitOfWorkService unitOfWorkService,
             IFileSystemController fsHelper) : base(logger)
         {
             this.UnitOfWorkService = unitOfWorkService;
@@ -30,19 +30,18 @@ namespace MediaStack_Importer.Services.ScannerService.ScannerJobs
 
         #region Methods
 
-        public override void Run()
+        public override void Execute()
         {
             Logger.LogDebug("Creating New Media");
-            var filePaths = Directory.GetFiles(this.fileSystemFSHelper.MediaDirectory, "*", SearchOption.AllDirectories);
-            Execute(filePaths);
+            ExecuteWithData(this.fileSystemFSHelper.GetAllMediaData());
         }
 
         protected override void ProcessData(object data)
         {
-            if (data is string mediaFilePath)
+            if (data is MediaData mediaData)
             {
-                Logger.LogDebug($"Processing Media: {mediaFilePath}");
-                this.addMedia(this.CreateOrUpdateMediaFromFile(mediaFilePath));
+                Logger.LogDebug($"Processing Media: {mediaData.Path}");
+                this.addMedia(this.createMediaIfNotExists(mediaData));
             }
         }
 
@@ -64,22 +63,21 @@ namespace MediaStack_Importer.Services.ScannerService.ScannerJobs
             BatchedEntities.Clear();
         }
 
-        protected Media CreateOrUpdateMediaFromFile(string filePath)
+        private Media createMediaIfNotExists(MediaData mediaData)
         {
             using var unitOfWork = this.UnitOfWorkService.Create();
-
-            if (!unitOfWork.Media.Get().Any(m => m.Path == this.fileSystemFSHelper.GetRelativePath(filePath)))
+            
+            if (!unitOfWork.Media.Get().Any(m => m.Path == this.fileSystemFSHelper.GetMediaDataRelativePath(mediaData)))
             {
-                string fileHash = this.fileSystemFSHelper.Hasher.GetFileHash(filePath);
-                Media media = unitOfWork.Media.Get().FirstOrDefault(m => m.Hash == fileHash);
-                if (media == null)
-                {
-                    return this.fileSystemFSHelper.CreateNewMedia(filePath, unitOfWork);
-                }
-                return this.fileSystemFSHelper.UpdateMedia(filePath, unitOfWork);
+                return this.createMedia(mediaData);
             }
 
             return null;
+        }
+
+        private Media createMedia(MediaData mediaData)
+        {
+            throw new NotImplementedException();
         }
 
         private void addMedia(Media media)

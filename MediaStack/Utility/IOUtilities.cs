@@ -2,7 +2,7 @@
 using System.IO;
 using System.Linq;
 
-namespace MediaStack_Importer.Utility
+namespace MediaStackCore.Utility
 {
     public static class IOUtilities
     {

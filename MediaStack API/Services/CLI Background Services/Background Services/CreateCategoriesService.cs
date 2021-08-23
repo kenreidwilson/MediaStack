@@ -5,9 +5,9 @@ using MediaStackCore.Models;
 using MediaStackCore.Services.UnitOfWorkService;
 using Microsoft.Extensions.Logging;
 
-namespace MediaStack_Importer.Services.ScannerService.ScannerJobs
+namespace MediaStack_API.Services.CLI_Background_Services.Background_Services
 {
-    public class CreateCategoriesJob : BatchScannerJob<Category>
+    public class CreateCategoriesService : BatchedParallelService<Category>
     {
         #region Data members
 
@@ -19,7 +19,7 @@ namespace MediaStack_Importer.Services.ScannerService.ScannerJobs
 
         #region Constructors
 
-        public CreateCategoriesJob(ILogger logger, IUnitOfWorkService unitOfWorkService,
+        public CreateCategoriesService(ILogger logger, IUnitOfWorkService unitOfWorkService,
             IFileSystemController fsController) : base(logger)
         {
             this.FSController = fsController;
@@ -30,10 +30,10 @@ namespace MediaStack_Importer.Services.ScannerService.ScannerJobs
 
         #region Methods
 
-        public override void Run()
+        public override void Execute()
         {
             Logger.LogDebug("Creating Categories");
-            Execute(this.FSController.GetCategoryNames());
+            ExecuteWithData(this.FSController.GetCategoryNames());
         }
 
         protected override void ProcessData(object data)

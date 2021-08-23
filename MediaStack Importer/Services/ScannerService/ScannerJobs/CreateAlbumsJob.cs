@@ -1,6 +1,5 @@
-﻿using System.IO;
+﻿using System.Collections.Generic;
 using System.Linq;
-using MediaStack_Importer.Utility;
 using MediaStackCore.Controllers;
 using MediaStackCore.Models;
 using MediaStackCore.Services.UnitOfWorkService;
@@ -14,14 +13,14 @@ namespace MediaStack_Importer.Services.ScannerService.ScannerJobs
 
         protected IUnitOfWorkService UnitOfWorkService;
 
-        protected IMediaFileSystemController FSController;
+        protected IFileSystemController FSController;
 
         #endregion
 
         #region Constructors
 
         public CreateAlbumsJob(ILogger logger, IUnitOfWorkService unitOfWorkService, 
-            IMediaFileSystemController fsController) : base(logger)
+            IFileSystemController fsController) : base(logger)
         {
             this.FSController = fsController;
             this.UnitOfWorkService = unitOfWorkService;
@@ -34,13 +33,13 @@ namespace MediaStack_Importer.Services.ScannerService.ScannerJobs
         public override void Run()
         {
             this.Logger.LogDebug("Creating Albums");
-            Execute(IOUtilities.GetDirectoriesAtLevel(this.FSController.MediaDirectory, 1));
+            Execute(this.FSController.GetArtistAlbumNames());
         }
 
         protected override void ProcessData(object data)
         {
             using var unitOfWork = this.UnitOfWorkService.Create();
-            if (data is DirectoryInfo artistDirectory)
+            if (data is string albumName)
             {
                 this.Logger.LogDebug($"Processing {artistDirectory.Name}'s: Albums");
                 var potentialArtist = unitOfWork.Artists.Get().FirstOrDefault(a => a.Name == artistDirectory.Name);

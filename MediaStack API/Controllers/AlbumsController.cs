@@ -71,19 +71,21 @@ namespace MediaStack_API.Controllers
                     return BadRequest();
                 }
 
-                Album album = await unitOfWork.Albums.Get()
-                                                 .FirstOrDefaultAsync(a => a.ArtistID == albumVm.ArtistID && a.Name == albumVm.Name);
-                if (album == null)
+                Album album;
+                lock (WriteLock)
                 {
-                    lock (WriteLock)
+                    album = unitOfWork.Albums.Get()
+                                                  .FirstOrDefault(a => a.ArtistID == albumVm.ArtistID && a.Name == albumVm.Name);
+                    if (album == null)
                     {
                         unitOfWork.Albums.Insert(this.Mapper.Map<Album>(albumVm));
                         unitOfWork.Save();
+                        album = unitOfWork.Albums
+                                                .Get(a => a.ArtistID == albumVm.ArtistID && a.Name == albumVm.Name)
+                                                .First();
                     }
-                    album = await unitOfWork.Albums
-                                      .Get(a => a.ArtistID == albumVm.ArtistID && a.Name == albumVm.Name)
-                                      .FirstAsync();
                 }
+                
 
                 return Ok(new BaseResponse(this.Mapper.Map<AlbumViewModel>(album)));
             }

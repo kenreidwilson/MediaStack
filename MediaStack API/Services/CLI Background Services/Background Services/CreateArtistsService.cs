@@ -1,13 +1,12 @@
 ﻿using System.Linq;
-using MediaStack_Importer.Utility;
 using MediaStackCore.Controllers;
 using MediaStackCore.Models;
 using MediaStackCore.Services.UnitOfWorkService;
 using Microsoft.Extensions.Logging;
 
-namespace MediaStack_Importer.Services.ScannerService.ScannerJobs
+namespace MediaStack_API.Services.CLI_Background_Services.Background_Services
 {
-    public class CreateArtistsJob : BatchScannerJob<Artist>
+    public class CreateArtistsService : BatchedParallelService<Artist>
     {
         #region Data members
 
@@ -19,7 +18,7 @@ namespace MediaStack_Importer.Services.ScannerService.ScannerJobs
 
         #region Constructors
 
-        public CreateArtistsJob(ILogger logger, IUnitOfWorkService unitOfWorkService,
+        public CreateArtistsService(ILogger logger, IUnitOfWorkService unitOfWorkService,
             IFileSystemController fsController) : base(logger)
         {
             this.FSController = fsController;
@@ -30,10 +29,10 @@ namespace MediaStack_Importer.Services.ScannerService.ScannerJobs
 
         #region Methods
 
-        public override void Run()
+        public override void Execute()
         {
             Logger.LogDebug("Creating Artists");
-            Execute(this.FSController.GetArtistNames());
+            ExecuteWithData(this.FSController.GetArtistNames());
         }
 
         protected override void ProcessData(object data)

@@ -1,5 +1,5 @@
-﻿using MediaStack_Importer.Controllers;
-using MediaStack_Importer.Services.ScannerService.ScannerJobs;
+﻿using MediaStack_Importer.Services.ScannerService.ScannerJobs;
+using MediaStackCore.Controllers;
 using MediaStackCore.Services.UnitOfWorkService;
 using Microsoft.Extensions.Logging;
 namespace MediaStack_Importer.Services.ScannerService
@@ -16,18 +16,18 @@ namespace MediaStack_Importer.Services.ScannerService
 
         protected IUnitOfWorkService UnitOfWorkService;
 
-        protected IMediaFileSystemHelper MediaFSHelper;
+        protected IFileSystemController fileSystemFSHelper;
 
 
         #endregion
 
         #region Constructors
 
-        public MediaScanner(ILogger logger, IUnitOfWorkService unitOfWorkService, IMediaFileSystemHelper helper)
+        public MediaScanner(ILogger logger, IUnitOfWorkService unitOfWorkService, IFileSystemController helper)
         {
             this.Logger = logger;
             this.UnitOfWorkService = unitOfWorkService;
-            this.MediaFSHelper = helper;
+            this.fileSystemFSHelper = helper;
         }
 
         #endregion
@@ -37,13 +37,13 @@ namespace MediaStack_Importer.Services.ScannerService
         public void Start()
         {
             this.Logger.LogInformation("Creating Media References");
-            new CreateCategoriesJob(this.Logger, this.UnitOfWorkService, this.MediaFSHelper).Run();
-            new CreateArtistsJob(this.Logger, this.UnitOfWorkService, this.MediaFSHelper).Run();
-            new CreateAlbumsJob(this.Logger, this.UnitOfWorkService, this.MediaFSHelper).Run();
+            new CreateCategoriesJob(this.Logger, this.UnitOfWorkService, this.fileSystemFSHelper).Run();
+            new CreateArtistsJob(this.Logger, this.UnitOfWorkService, this.fileSystemFSHelper).Run();
+            new CreateAlbumsJob(this.Logger, this.UnitOfWorkService, this.fileSystemFSHelper).Run();
             this.Logger.LogInformation("Searching for new Media...");
-            new CreateNewMediaJob(this.Logger, this.UnitOfWorkService, this.MediaFSHelper).Run();
+            new CreateNewMediaJob(this.Logger, this.UnitOfWorkService, this.fileSystemFSHelper).Run();
             this.Logger.LogInformation("Verifying Media...");
-            new VerifyMediaJob(this.Logger,  this.UnitOfWorkService, this.MediaFSHelper).Run();
+            new VerifyMediaJob(this.Logger,  this.UnitOfWorkService, this.fileSystemFSHelper).Run();
             this.Logger.LogInformation("Organizing Albums...");
             new OrganizeAlbumJob(this.Logger, this.UnitOfWorkService).Run();
             this.Logger.LogInformation("Done");

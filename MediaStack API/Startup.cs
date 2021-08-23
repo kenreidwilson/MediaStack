@@ -10,6 +10,10 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using System.IO.Abstractions;
+using MediaStack_API.Services.CLI_Background_Services;
+using MediaStackCore.Services.HasherService;
+using Microsoft.Extensions.Logging;
 
 namespace MediaStack_API
 {
@@ -41,6 +45,10 @@ namespace MediaStack_API
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            var serviceProvider = services.BuildServiceProvider();
+            var logger = serviceProvider.GetService<ILogger<Program>>();
+            services.AddSingleton(typeof(ILogger), logger);
+
             services.AddCors(options =>
             {
                 options.AddPolicy(this.MyAllowSpecificOrigins,
@@ -56,10 +64,14 @@ namespace MediaStack_API
 
             services.AddTransient<DbContext, MediaStackContext>();
             services.AddTransient<IUnitOfWorkService, UnitOfWorkService>();
-            services.AddSingleton<IMediaFileSystemController, MediaFSController>();
+            services.AddTransient<IFileSystem, FileSystem>();
+            services.AddTransient<IHasher, SH1Hasher>();
+            services.AddSingleton<IFileSystemController, FileSystemController>();
             services.AddSingleton<IThumbnailer, Thumbnailer>();
 
             services.AddAutoMapper(typeof(DefaultAutoMapperProfile));
+
+            services.AddHostedService<CLIBackgroundServiceHandler>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

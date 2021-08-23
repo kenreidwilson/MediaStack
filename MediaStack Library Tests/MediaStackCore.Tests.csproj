@@ -21,7 +21,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\MediaStack Testing Library\MediaStack Testing Library.csproj" />
     <ProjectReference Include="..\MediaStack\MediaStackCore.csproj" />
   </ItemGroup>
 

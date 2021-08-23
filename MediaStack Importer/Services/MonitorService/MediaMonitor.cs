@@ -4,7 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using MediaStack_Importer.Controllers;
+using MediaStackCore.Controllers;
 using MediaStackCore.Data_Access_Layer;
 using MediaStackCore.Services.UnitOfWorkService;
 using Microsoft.Extensions.Logging;
@@ -21,7 +21,7 @@ namespace MediaStack_Importer.Services.MonitorService
 
         protected ILogger Logger;
 
-        protected IMediaFileSystemHelper MediaFSHelper;
+        protected IFileSystemController fileSystemFSHelper;
 
         protected IUnitOfWorkService UnitOfWorkService;
 
@@ -37,10 +37,10 @@ namespace MediaStack_Importer.Services.MonitorService
 
         #region Constructors
 
-        public MediaMonitor(ILogger logger, IUnitOfWorkService unitOfWorkService, IMediaFileSystemHelper fsHelper)
+        public MediaMonitor(ILogger logger, IUnitOfWorkService unitOfWorkService, IFileSystemController fsHelper)
         {
             this.Logger = logger;
-            this.MediaFSHelper = fsHelper;
+            this.fileSystemFSHelper = fsHelper;
             this.UnitOfWorkService = unitOfWorkService;
         }
 
@@ -50,7 +50,7 @@ namespace MediaStack_Importer.Services.MonitorService
 
         public async Task Start()
         {
-            this.watcher = new FileSystemWatcher(this.MediaFSHelper.MediaDirectory);
+            this.watcher = new FileSystemWatcher(this.fileSystemFSHelper.MediaDirectory);
 
             this.watcher.NotifyFilter = NotifyFilters.Attributes
                                         | NotifyFilters.CreationTime
@@ -95,7 +95,7 @@ namespace MediaStack_Importer.Services.MonitorService
                 {
                     using (var unitOfWork = this.UnitOfWorkService.Create())
                     {
-                        this.MediaFSHelper.CreateMediaFromFile(e.FullPath, unitOfWork);
+                        this.fileSystemFSHelper.CreateNewMedia(e.FullPath, unitOfWork);
                         unitOfWork.Save();
                     }
                 }
@@ -120,7 +120,7 @@ namespace MediaStack_Importer.Services.MonitorService
                 {
                     using (var unitOfWork = this.UnitOfWorkService.Create())
                     {
-                        this.MediaFSHelper.CreateMediaFromFile(e.FullPath, unitOfWork);
+                        this.fileSystemFSHelper.CreateNewMedia(e.FullPath, unitOfWork);
                         unitOfWork.Save();
                     }
                 }
@@ -138,7 +138,7 @@ namespace MediaStack_Importer.Services.MonitorService
                 Console.WriteLine($"Deleted: {e.FullPath}");
                 using (var unitOfWork = this.UnitOfWorkService.Create())
                 {
-                    var mediaPath = e.FullPath.Replace(this.MediaFSHelper.MediaDirectory, "");
+                    var mediaPath = e.FullPath.Replace(this.fileSystemFSHelper.MediaDirectory, "");
                     var media = unitOfWork.Media.Get(media => media.Path == mediaPath).FirstOrDefault();
                     if (media != null)
                     {
@@ -176,7 +176,7 @@ namespace MediaStack_Importer.Services.MonitorService
                 {
                     if (File.Exists(e.FullPath))
                     {
-                        this.MediaFSHelper.CreateMediaFromFile(e.FullPath, unitOfWork);
+                        this.fileSystemFSHelper.CreateNewMedia(e.FullPath, unitOfWork);
                         unitOfWork.Save();
                     }
                     else if (Directory.Exists(e.FullPath))
@@ -188,7 +188,7 @@ namespace MediaStack_Importer.Services.MonitorService
                             ? e.FullPath + "media"
                             : e.FullPath + Path.DirectorySeparatorChar + "media";
 
-                        var filePaths = Directory.GetFiles(this.MediaFSHelper.MediaDirectory, "*",
+                        var filePaths = Directory.GetFiles(this.fileSystemFSHelper.MediaDirectory, "*",
                             SearchOption.AllDirectories);
 
                         var counter = 0;
@@ -202,7 +202,7 @@ namespace MediaStack_Importer.Services.MonitorService
                                 {
                                     try
                                     {
-                                        this.MediaFSHelper.CreateMediaFromFile(e.FullPath, unitOfWork);
+                                        this.fileSystemFSHelper.CreateNewMedia(e.FullPath, unitOfWork);
                                     }
                                     catch (Exception)
                                     {
