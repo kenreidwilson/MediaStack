@@ -103,7 +103,7 @@ namespace MediaStack_API.Controllers
                     }
 
                     stream.Position = 0;
-                    MediaData mediaData = this.FSController.WriteMediaData(stream);
+                    MediaData mediaData = this.FSController.WriteMediaStream(media, stream);
 
                     media.Path = this.FSController.GetMediaDataRelativePath(mediaData);
 

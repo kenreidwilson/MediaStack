@@ -30,15 +30,15 @@ namespace MediaStackCore.Controllers
 
         public void DeleteMediaData(Media media);
 
-        public IQueryable<MediaData> GetAllMediaData(Expression<Func<MediaData, bool>> expression = null);
+        public IEnumerable<MediaData> GetAllMediaData();
 
-        public MediaData WriteMediaData(Stream mediaDataStream);
+        public MediaData WriteMediaStream(Media media, Stream mediaDataStream);
 
-        public IEnumerable<string> GetCategoryNames(Expression<Func<string, bool>> expression = null);
+        public IEnumerable<string> GetCategoryNames();
 
-        public IEnumerable<string> GetArtistNames(Expression<Func<string, bool>> expression = null);
+        public IEnumerable<string> GetArtistNames();
 
-        public IDictionary<string, IEnumerable<string>> GetArtistNameAlbumNamesDictionary(Expression<Func<string, bool>> expression = null);
+        public IDictionary<string, IEnumerable<string>> GetArtistNameAlbumNamesDictionary();
 
         /// <summary>
         ///     Determines the type of the Media,
@@ -48,9 +48,9 @@ namespace MediaStackCore.Controllers
         /// <returns>System.Nullable&lt;MediaType&gt;.</returns>
         public MediaType? GetMediaDataStreamType(Stream stream);
 
-        public void MoveMediaFileToProperLocation(Media media);
+        public MediaData MoveMediaFileToProperLocation(Media media);
 
-        public void MoveAlbumToProperLocation(Album album);
+        public IDictionary<Media, MediaData> MoveAlbumToProperLocation(Album album);
 
         #endregion
     }

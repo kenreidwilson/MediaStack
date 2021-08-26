@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.IO.Abstractions;
 using System.Linq;
-using System.Linq.Expressions;
+using MediaStackCore.Extensions;
 using MediaStackCore.Models;
 using MediaStackCore.Services.HasherService;
 using Microsoft.Extensions.Logging;
@@ -38,9 +38,9 @@ namespace MediaStackCore.Controllers
                 throw new InvalidOperationException("Invalid Media Directory");
             }
 
-            if (this.MediaDirectory.Last() != Path.DirectorySeparatorChar)
+            if (this.MediaDirectory.Last() != this.FileSystem.Path.DirectorySeparatorChar)
             {
-                this.MediaDirectory += Path.DirectorySeparatorChar;
+                this.MediaDirectory += this.FileSystem.Path.DirectorySeparatorChar;
             }
 
             this.FileSystem = fileSystem;
@@ -60,47 +60,68 @@ namespace MediaStackCore.Controllers
                 return null;
             }
 
-            return Path.IsPathFullyQualified(path) ? path.Replace(this.MediaDirectory, "") : path;
+            return this.FileSystem.Path.IsPathFullyQualified(path) ? path.Replace(this.MediaDirectory, "") : path;
         }
 
         public bool DoesMediaFileExist(Media media)
         {
-            throw new NotImplementedException();
+            return this.FileSystem.File.Exists(this.getMediaFullPath(media));
         }
 
         public MediaData GetMediaData(Media media)
         {
-            throw new NotImplementedException();
+            return new(this.FileSystem, this.getMediaFullPath(media));
         }
 
         public void DeleteMediaData(Media media)
         {
-            throw new NotImplementedException();
+            this.FileSystem.File.Delete(this.getMediaFullPath(media));
         }
 
-        public IQueryable<MediaData> GetAllMediaData(Expression<Func<MediaData, bool>> expression = null)
+        public IEnumerable<MediaData> GetAllMediaData()
         {
-            throw new NotImplementedException();
+            IDirectoryInfo mediaDirectory = this.FileSystem.DirectoryInfo.FromDirectoryName(this.MediaDirectory);
+            return mediaDirectory.GetFiles().Select(file => new MediaData(this.FileSystem, file.FullName));
         }
 
-        public MediaData WriteMediaData(Stream mediaDataStream)
+        public MediaData WriteMediaStream(Media media, Stream mediaDataStream)
         {
-            throw new NotImplementedException();
+            string filePath = this.determineMediaFullFilePath(media);
+
+            // TODO: Find a better way.
+            while (this.FileSystem.File.Exists(filePath))
+            {
+                filePath += "_";
+            }
+
+            Stream newFileStream = this.FileSystem.File.Create(filePath);
+            mediaDataStream.Seek(0, SeekOrigin.Begin);
+            mediaDataStream.CopyTo(newFileStream);
+            newFileStream.Close();
+            return new MediaData(this.FileSystem, filePath);
         }
 
-        public IEnumerable<string> GetCategoryNames(Expression<Func<string, bool>> expression = null)
+        public IEnumerable<string> GetCategoryNames()
         {
-            throw new NotImplementedException();
+            return this.FileSystem.Directory.GetDirectories(this.MediaDirectory, "*", SearchOption.TopDirectoryOnly);
         }
 
-        public IEnumerable<string> GetArtistNames(Expression<Func<string, bool>> expression = null)
+        public IEnumerable<string> GetArtistNames()
         {
-            throw new NotImplementedException();
+            return this.FileSystem.GetDirectoriesAtLevel(this.MediaDirectory, 1).Select(d => d.Name);
         }
 
-        public IDictionary<string, IEnumerable<string>> GetArtistNameAlbumNamesDictionary(Expression<Func<string, bool>> expression = null)
+        public IDictionary<string, IEnumerable<string>> GetArtistNameAlbumNamesDictionary()
         {
-            throw new NotImplementedException();
+            IDictionary<string, IEnumerable<string>> artistAlbumsDictionary =
+                new Dictionary<string, IEnumerable<string>>();
+
+            foreach (IDirectoryInfo artistDirectory in this.FileSystem.GetDirectoriesAtLevel(this.MediaDirectory, 1))
+            {
+                artistAlbumsDictionary[artistDirectory.Name] = artistDirectory.GetDirectories().Select(d => d.Name);
+            }
+
+            return artistAlbumsDictionary;
         }
 
         public MediaType? GetMediaDataStreamType(Stream stream)
@@ -150,44 +171,25 @@ namespace MediaStackCore.Controllers
             }
         }
 
-        public void MoveMediaFileToProperLocation(Media media)
+        public MediaData MoveMediaFileToProperLocation(Media media)
         {
-            throw new NotImplementedException();
-        }
-
-        public void MoveAlbumToProperLocation(Album album)
-        {
-            throw new NotImplementedException();
-        }
-
-        /// <summary>
-        ///     Moves the Media file to the location specified.
-        /// </summary>
-        /// <param name="media"></param>
-        public string MoveMedia(Media media)
-        {
-            var newPath = this.determineMediaFilePath(media);
-            var directoryInfo = new FileInfo(newPath).Directory;
+            var newFullPath = this.determineMediaFullFilePath(media);
+            var directoryInfo = this.FileSystem.FileInfo.FromFileName(newFullPath).Directory;
             directoryInfo?.Create();
-            File.Move(this.GetMediaFullPath(media), newPath);
-            return newPath;
+            this.FileSystem.File.Move(this.getMediaFullPath(media), newFullPath);
+            return new MediaData(this.FileSystem, newFullPath);
         }
 
-        /// <summary>
-        ///     Moves all Media in an Album to the location specified.
-        /// </summary>
-        /// <param name="album"></param>
-        public string MoveAlbum(Album album)
+        public IDictionary<Media, MediaData> MoveAlbumToProperLocation(Album album)
         {
-            var newPath = "";
+            IDictionary<Media, MediaData> mediaDataDictionary = new Dictionary<Media, MediaData>();
 
-            foreach (var media in album.Media)
+            foreach (Media media in album.Media)
             {
-                newPath = this.MoveMedia(media);
+                mediaDataDictionary[media] = this.MoveMediaFileToProperLocation(media);
             }
 
-            var pathSplit = newPath.Split(Path.DirectorySeparatorChar);
-            return string.Join(Path.DirectorySeparatorChar, pathSplit.Take(pathSplit.Length - 1));
+            return mediaDataDictionary;
         }
 
         /// <summary>
@@ -196,7 +198,7 @@ namespace MediaStackCore.Controllers
         /// </summary>
         /// <param name="media"></param>
         /// <returns></returns>
-        private string determineMediaFilePath(Media media)
+        private string determineMediaFullFilePath(Media media)
         {
             if (media.Path == null)
             {
@@ -222,15 +224,16 @@ namespace MediaStackCore.Controllers
             return $@"{newPath}{fileName}";
         }
 
-        private string GetMediaFullPath(Media media)
+        private string getMediaFullPath(Media media)
         {
             if (media?.Path == null)
             {
-                return null;
+                throw new ArgumentException("Media is null or has no path.");
             }
 
-            if (Path.IsPathFullyQualified(media.Path))
+            if (this.FileSystem.Path.IsPathFullyQualified(media.Path))
             {
+                this.Logger.LogWarning($"Media \"{media.ID}\" is using full path!");
                 return media.Path;
             }
 
