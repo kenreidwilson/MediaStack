@@ -22,8 +22,6 @@ namespace MediaStackCore.Controllers
 
         #region Methods
 
-        public string GetMediaDataRelativePath(MediaData data);
-
         public bool DoesMediaFileExist(Media media);
 
         public MediaData GetMediaData(Media media);

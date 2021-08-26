@@ -52,25 +52,14 @@ namespace MediaStackCore.Controllers
 
         #region Methods
 
-        public string GetMediaDataRelativePath(MediaData data)
-        {
-            string path = data.Path;
-            if (path == null)
-            {
-                return null;
-            }
-
-            return this.FileSystem.Path.IsPathFullyQualified(path) ? path.Replace(this.MediaDirectory, "") : path;
-        }
-
         public bool DoesMediaFileExist(Media media)
         {
-            return this.FileSystem.File.Exists(this.getMediaFullPath(media));
+            return this.FileSystem.File.Exists(this.GetMediaData(media).RelativePath);
         }
 
         public MediaData GetMediaData(Media media)
         {
-            return new(this.FileSystem, this.getMediaFullPath(media));
+            return new(this.FileSystem, this.MediaDirectory, $"{this.MediaDirectory}{media.Path}");
         }
 
         public void DeleteMediaData(Media media)
@@ -81,7 +70,8 @@ namespace MediaStackCore.Controllers
         public IEnumerable<MediaData> GetAllMediaData()
         {
             IDirectoryInfo mediaDirectory = this.FileSystem.DirectoryInfo.FromDirectoryName(this.MediaDirectory);
-            return mediaDirectory.GetFiles().Select(file => new MediaData(this.FileSystem, file.FullName));
+            return mediaDirectory.GetFiles().Select(file => 
+                new MediaData(this.FileSystem, this.MediaDirectory, file.FullName));
         }
 
         public MediaData WriteMediaStream(Media media, Stream mediaDataStream)
@@ -98,7 +88,7 @@ namespace MediaStackCore.Controllers
             mediaDataStream.Seek(0, SeekOrigin.Begin);
             mediaDataStream.CopyTo(newFileStream);
             newFileStream.Close();
-            return new MediaData(this.FileSystem, filePath);
+            return new MediaData(this.FileSystem, this.MediaDirectory, filePath);
         }
 
         public IEnumerable<string> GetCategoryNames()
@@ -177,7 +167,7 @@ namespace MediaStackCore.Controllers
             var directoryInfo = this.FileSystem.FileInfo.FromFileName(newFullPath).Directory;
             directoryInfo?.Create();
             this.FileSystem.File.Move(this.getMediaFullPath(media), newFullPath);
-            return new MediaData(this.FileSystem, newFullPath);
+            return new MediaData(this.FileSystem, this.MediaDirectory, newFullPath);
         }
 
         public IDictionary<Media, MediaData> MoveAlbumToProperLocation(Album album)
@@ -205,18 +195,18 @@ namespace MediaStackCore.Controllers
                 throw new ArgumentException();
             }
 
-            var fileName = media.Path.Split(Path.DirectorySeparatorChar).Last();
+            var fileName = media.Path.Split(this.FileSystem.Path.DirectorySeparatorChar).Last();
             var newPath = this.MediaDirectory;
 
             if (media.CategoryID != null)
             {
-                newPath += $@"{media.Category.Name}{Path.DirectorySeparatorChar}";
+                newPath += $@"{media.Category.Name}{this.FileSystem.Path.DirectorySeparatorChar}";
                 if (media.ArtistID != null)
                 {
-                    newPath += $@"{media.Artist.Name}{Path.DirectorySeparatorChar}";
+                    newPath += $@"{media.Artist.Name}{this.FileSystem.Path.DirectorySeparatorChar}";
                     if (media.AlbumID != null)
                     {
-                        newPath += $@"{media.Album.Name}{Path.DirectorySeparatorChar}";
+                        newPath += $@"{media.Album.Name}{this.FileSystem.Path.DirectorySeparatorChar}";
                     }
                 }
             }
@@ -226,18 +216,7 @@ namespace MediaStackCore.Controllers
 
         private string getMediaFullPath(Media media)
         {
-            if (media?.Path == null)
-            {
-                throw new ArgumentException("Media is null or has no path.");
-            }
-
-            if (this.FileSystem.Path.IsPathFullyQualified(media.Path))
-            {
-                this.Logger.LogWarning($"Media \"{media.ID}\" is using full path!");
-                return media.Path;
-            }
-
-            return $@"{this.MediaDirectory}{media.Path}";
+            return new MediaData(this.FileSystem, this.MediaDirectory, media.Path).FullPath;
         }
 
         #endregion

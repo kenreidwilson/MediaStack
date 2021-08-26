@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.IO.Abstractions;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace MediaStackCore.Models
@@ -11,42 +12,73 @@ namespace MediaStackCore.Models
 
         protected readonly IFileSystem FileSystem;
 
-        public readonly string Path;
+        protected readonly string MediaDirectory;
 
-        public MediaData(IFileSystem fs, string path)
+        protected readonly string Path;
+
+        public string RelativePath => this.getRelativePath();
+
+        public string FullPath => this.getFullPath();
+
+        public MediaData(IFileSystem fileSystem, string mediaDirectory, string path)
         {
-            this.FileSystem = fs;
+            if (fileSystem == null || mediaDirectory == null || path == null)
+            {
+                throw new ArgumentException();
+            }
+
+            this.FileSystem = fileSystem;
+            this.MediaDirectory = mediaDirectory;
             this.Path = path;
         }
 
         public Stream GetDataStream()
         {
-            throw new NotImplementedException();
+            return this.FileSystem.File.Open(this.FullPath, FileMode.Open);
         }
 
         public byte[] GetDataBytes()
         {
-            throw new NotImplementedException();
+            return this.FileSystem.File.ReadAllBytes(this.FullPath);
         }
 
         public async Task<byte[]> GetDataBytesAsync()
         {
-            throw new NotImplementedException();
+            return await this.FileSystem.File.ReadAllBytesAsync(this.FullPath);
         }
 
         public string GetCategoryName()
         {
-            throw new NotImplementedException();
+            return this.RelativePath.Split($"{this.FileSystem.Path.DirectorySeparatorChar}")
+                       .First();
         }
 
         public string GetArtistName()
         {
-            throw new NotImplementedException();
+            return this.RelativePath.Split($"{this.FileSystem.Path.DirectorySeparatorChar}")
+                       .Skip(1)
+                       .First();
         }
 
         public string GetAlbumName()
         {
-            throw new NotImplementedException();
+            return this.RelativePath.Split($"{this.FileSystem.Path.DirectorySeparatorChar}")
+                       .Skip(2)
+                       .First();
+        }
+
+        private string getRelativePath()
+        {
+            return !this.FileSystem.Path.IsPathFullyQualified(this.Path) ? 
+                this.Path : 
+                this.Path.Replace(this.MediaDirectory, "");
+        }
+
+        private string getFullPath()
+        {
+            return this.FileSystem.Path.IsPathFullyQualified(this.Path) ? 
+                this.Path : 
+                $"{this.MediaDirectory}{this.Path}";
         }
 
         #endregion
