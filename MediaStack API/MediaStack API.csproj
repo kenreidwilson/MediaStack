@@ -27,7 +27,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\MediaStack\MediaStackCore.csproj" />
+    <ProjectReference Include="..\MediaStackCore\MediaStackCore.csproj" />
   </ItemGroup>
 
 </Project>
