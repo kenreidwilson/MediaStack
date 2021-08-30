@@ -1,13 +1,13 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 
 namespace MediaStack_API.Services.CLI_Background_Services.Background_Services
 {
-    public abstract class BatchedParallelService<T> : IDisposable
+    public abstract class BatchedParallelService<T>
     {
         #region Data members
 
@@ -16,10 +16,6 @@ namespace MediaStack_API.Services.CLI_Background_Services.Background_Services
         protected int BatchSize = 500;
 
         protected readonly IDictionary<object, T> BatchedEntities;
-
-        private int toProcess;
-
-        private readonly ManualResetEvent finishEvent = new(false);
 
         private readonly object writeLock = new();
 
@@ -37,62 +33,48 @@ namespace MediaStack_API.Services.CLI_Background_Services.Background_Services
 
         #region Methods
 
-        public abstract void Execute();
+        public abstract Task Execute(CancellationToken cancellationToken);
 
-        protected virtual void ExecuteWithData(IEnumerable<object> data)
+        protected virtual async Task ExecuteWithData(IEnumerable<object> data, CancellationToken cancellationToken)
         {
-            this.toProcess = data.Count();
-            bool shouldWait = this.toProcess > 0;
+            List<Task> taskList = new List<Task>();
 
             foreach (var aData in data)
             {
-                this.QueueExecuteProcess(aData);
+                taskList.Add(this.RunProcessDataTask(aData, cancellationToken));
             }
 
-            if (shouldWait)
-            {
-                this.finishEvent.WaitOne();
-                this.Save();
-            }
+            await Task.WhenAll(taskList);
+            this.Save();
         }
 
-        protected virtual void QueueExecuteProcess(object data)
+        protected virtual async Task RunProcessDataTask(object data, CancellationToken cancellationToken)
         {
-            ThreadPool.QueueUserWorkItem(_ =>
+            if (cancellationToken.IsCancellationRequested)
             {
-                try
+                cancellationToken.ThrowIfCancellationRequested();
+            }
+
+            try
+            {
+                await this.ProcessData(data);
+                lock (this.writeLock)
                 {
-                    this.ProcessData(data);
-                    lock (this.writeLock)
+                    if (this.BatchedEntities.Count >= this.BatchSize)
                     {
-                        if (this.BatchedEntities.Count >= this.BatchSize)
-                        {
-                            this.Save();
-                        }
+                        this.Save();
                     }
                 }
-                catch (Exception e)
-                {
-                    this.Logger.LogError(e.ToString());
-                }
-                finally
-                {
-                    if (Interlocked.Decrement(ref this.toProcess) == 0)
-                    {
-                        this.finishEvent.Set();
-                    }
-                }
-            });
+            }
+            catch (Exception e)
+            {
+                this.Logger.LogError(e.ToString());
+            }
         }
 
-        protected abstract void ProcessData(object data);
+        protected abstract Task ProcessData(object data);
 
         protected abstract void Save();
-
-        public void Dispose()
-        {
-            this.finishEvent.Dispose();
-        }
 
         #endregion
     }

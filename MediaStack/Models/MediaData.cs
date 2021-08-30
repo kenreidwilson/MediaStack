@@ -50,21 +50,21 @@ namespace MediaStackCore.Models
         public string GetCategoryName()
         {
             return this.RelativePath.Split($"{this.FileSystem.Path.DirectorySeparatorChar}")
-                       .First();
+                       .FirstOrDefault();
         }
 
         public string GetArtistName()
         {
             return this.RelativePath.Split($"{this.FileSystem.Path.DirectorySeparatorChar}")
                        .Skip(1)
-                       .First();
+                       .FirstOrDefault();
         }
 
         public string GetAlbumName()
         {
             return this.RelativePath.Split($"{this.FileSystem.Path.DirectorySeparatorChar}")
                        .Skip(2)
-                       .First();
+                       .FirstOrDefault();
         }
 
         private string getRelativePath()

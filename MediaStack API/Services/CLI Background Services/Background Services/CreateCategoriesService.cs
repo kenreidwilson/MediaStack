@@ -1,5 +1,7 @@
 ﻿using System.IO;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using MediaStackCore.Controllers;
 using MediaStackCore.Models;
 using MediaStackCore.Services.UnitOfWorkService;
@@ -30,13 +32,13 @@ namespace MediaStack_API.Services.CLI_Background_Services.Background_Services
 
         #region Methods
 
-        public override void Execute()
+        public override Task Execute(CancellationToken cancellationToken)
         {
             Logger.LogDebug("Creating Categories");
-            ExecuteWithData(this.FSController.GetCategoryNames());
+            return ExecuteWithData(this.FSController.GetCategoryNames(), cancellationToken);
         }
 
-        protected override void ProcessData(object data)
+        protected override Task ProcessData(object data)
         {
             if (data is string categoryPath)
             {
@@ -48,6 +50,8 @@ namespace MediaStack_API.Services.CLI_Background_Services.Background_Services
                     BatchedEntities[categoryName] = potentialCategory;
                 }
             }
+
+            return Task.CompletedTask;
         }
 
         protected override void Save()

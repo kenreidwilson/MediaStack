@@ -33,6 +33,8 @@ namespace MediaStackCore.Controllers
 
         public FileSystemController(IFileSystem fileSystem, IHasher hasher, ILogger logger)
         {
+            this.FileSystem = fileSystem;
+
             if (string.IsNullOrEmpty(this.MediaDirectory))
             {
                 throw new InvalidOperationException("Invalid Media Directory");
@@ -43,7 +45,6 @@ namespace MediaStackCore.Controllers
                 this.MediaDirectory += this.FileSystem.Path.DirectorySeparatorChar;
             }
 
-            this.FileSystem = fileSystem;
             this.Hasher = hasher;
             this.Logger = logger;
         }
@@ -59,7 +60,7 @@ namespace MediaStackCore.Controllers
 
         public MediaData GetMediaData(Media media)
         {
-            return new(this.FileSystem, this.MediaDirectory, $"{this.MediaDirectory}{media.Path}");
+            return new(this.FileSystem, this.MediaDirectory, media.Path);
         }
 
         public void DeleteMediaData(Media media)
@@ -70,13 +71,15 @@ namespace MediaStackCore.Controllers
         public IEnumerable<MediaData> GetAllMediaData()
         {
             IDirectoryInfo mediaDirectory = this.FileSystem.DirectoryInfo.FromDirectoryName(this.MediaDirectory);
-            return mediaDirectory.GetFiles().Select(file => 
+            return mediaDirectory.GetFiles("*.*", SearchOption.AllDirectories).Select(file => 
                 new MediaData(this.FileSystem, this.MediaDirectory, file.FullName));
         }
 
-        public MediaData WriteMediaStream(Media media, Stream mediaDataStream)
+        public MediaData WriteMediaStream(Stream mediaDataStream, Media media = null)
         {
-            string filePath = this.determineMediaFullFilePath(media);
+            string filePath = media == null ?
+                $@"{this.MediaDirectory}{this.Hasher.CalculateHash(mediaDataStream)}" :
+                this.determineMediaFullFilePath(media);
 
             // TODO: Find a better way.
             while (this.FileSystem.File.Exists(filePath))

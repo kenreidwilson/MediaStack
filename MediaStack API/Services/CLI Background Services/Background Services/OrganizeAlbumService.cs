@@ -1,5 +1,7 @@
 ﻿using System.Collections;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using MediaStackCore.Data_Access_Layer;
 using MediaStackCore.Models;
 using MediaStackCore.Services.UnitOfWorkService;
@@ -16,16 +18,16 @@ namespace MediaStack_API.Services.CLI_Background_Services.Background_Services
             this.UnitOfWorkService = unitOfWorkService;
         }
 
-        public override void Execute()
+        public override Task Execute(CancellationToken cancellationToken)
         {
             Logger.LogDebug("Organizing Albums");
             using (IUnitOfWork unitOfWork = this.UnitOfWorkService.Create())
             {
-                ExecuteWithData(unitOfWork.Albums.Get());
+                return ExecuteWithData(unitOfWork.Albums.Get(), cancellationToken);
             }
         }
 
-        protected override void ProcessData(object data)
+        protected override Task ProcessData(object data)
         {
             if (data is Album album)
             {
@@ -43,6 +45,8 @@ namespace MediaStack_API.Services.CLI_Background_Services.Background_Services
                     }
                 }
             }
+
+            return Task.CompletedTask;
         }
 
         protected override void Save()

@@ -1,8 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Linq.Expressions;
 using MediaStackCore.Models;
 using MediaStackCore.Services.HasherService;
 
@@ -30,7 +27,7 @@ namespace MediaStackCore.Controllers
 
         public IEnumerable<MediaData> GetAllMediaData();
 
-        public MediaData WriteMediaStream(Media media, Stream mediaDataStream);
+        public MediaData WriteMediaStream(Stream mediaDataStream, Media media = null);
 
         public IEnumerable<string> GetCategoryNames();
 

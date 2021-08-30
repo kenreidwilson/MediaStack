@@ -24,7 +24,7 @@ namespace MediaStackCore.Services.HasherService
                 return this.hashCache[cacheId];
             }
 
-            stream.Position = 0;
+            stream.Seek(0, SeekOrigin.Begin);
             using (var hasher = SHA1.Create())
             {
                 byte[] hashBytes = hasher.ComputeHash(stream);
@@ -45,7 +45,7 @@ namespace MediaStackCore.Services.HasherService
                 return this.hashCache[cacheId];
             }
 
-            stream.Position = 0;
+            stream.Seek(0, SeekOrigin.Begin);
             using (var hasher = SHA1.Create())
             {
                 byte[] hashBytes = await hasher.ComputeHashAsync(stream);

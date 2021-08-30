@@ -1,7 +1,9 @@
-﻿using System;
+﻿using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using MediaStackCore.Controllers;
-using MediaStackCore.Data_Access_Layer;
+using MediaStackCore.Extensions;
 using MediaStackCore.Models;
 using MediaStackCore.Services.UnitOfWorkService;
 using Microsoft.Extensions.Logging;
@@ -31,10 +33,43 @@ namespace MediaStack_API.Services.CLI_Background_Services.Background_Services
 
         #region Methods
 
-        public override void Execute()
+        public override async Task Execute(CancellationToken cancellationToken)
         {
             using var unitOfWork = this.UnitOfWorkService.Create();
-            ExecuteWithData(unitOfWork.Media.Get(m => m.Path != null).ToList());
+
+            IList<Media> mediaWithChangedFile = new List<Media>();
+            IList<MediaData> mediaDataWhoReplaceOldMediaFile = new List<MediaData>();
+
+            var mfc = new MediaFilesController(this.fileSystemFSHelper, this.UnitOfWorkService);
+
+            mfc.OnMediaFileChanged += (media, mediaData) =>
+            {
+                mediaWithChangedFile.Add(media);
+                mediaDataWhoReplaceOldMediaFile.Add(mediaData);
+            };
+
+            await mfc.FindChangedMediaFiles();
+            await ExecuteWithData(mediaWithChangedFile, cancellationToken);
+            await ExecuteWithData(mediaDataWhoReplaceOldMediaFile, cancellationToken);
+        }
+
+        protected override async Task ProcessData(object data)
+        {
+            if (data is Media media)
+            {
+                BatchedEntities[media.Hash] = this.UnitOfWorkService.Create().DisableMedia(media);
+            }
+
+            if (data is MediaData mediaData)
+            {
+                var newMedia = await this.UnitOfWorkService.Create()
+                                         .CreateNewMediaOrFixMediaPathAsync(this.fileSystemFSHelper, mediaData);
+
+                if (newMedia != null)
+                {
+                    BatchedEntities[newMedia.Hash] = newMedia;
+                }
+            }
         }
 
         protected override void Save()
@@ -52,70 +87,6 @@ namespace MediaStack_API.Services.CLI_Background_Services.Background_Services
             }
 
             BatchedEntities.Clear();
-        }
-
-        protected override void ProcessData(object data)
-        {
-            if (data is Media media)
-            {
-                this.addMedia(this.VerifyMedia(media));
-            }
-        }
-
-        protected Media VerifyMedia(Media media)
-        {
-            using var unitOfWork = this.UnitOfWorkService.Create();
-            if (this.fileSystemFSHelper.DoesMediaFileExist(media))
-            {
-                unitOfWork.DisableMedia(media);
-                return media;
-            }
-
-            var currentHash = this.fileSystemFSHelper.Hasher.CalculateHash(this.fileSystemFSHelper.GetMediaData(media).GetDataStream());
-            if (currentHash != media.Hash)
-            {
-                return this.HandleMediaHashChange(media, currentHash, unitOfWork);
-            }
-
-            return null;
-        }
-
-        protected Media HandleMediaHashChange(Media media, string newHash, IUnitOfWork unitOfWork)
-        {
-            unitOfWork.DisableMedia(media);
-            this.addMedia(media);
-            var otherMedia = unitOfWork.Media.Get().FirstOrDefault(m => m.Hash == newHash);
-            if (otherMedia == null)
-            {
-                return this.createMedia(this.fileSystemFSHelper.GetMediaData(media), unitOfWork);
-            }
-
-            return this.HandleMovedMedia(otherMedia);
-        }
-
-        protected Media HandleMovedMedia(Media media)
-        {
-            media.Path = this.fileSystemFSHelper.GetMediaDataRelativePath(
-                this.fileSystemFSHelper.GetMediaData(media));
-            return media;
-        }
-
-        private Media createMedia(MediaData mediaData, IUnitOfWork unitOfWork)
-        {
-            throw new NotImplementedException();
-        }
-
-        private void addMedia(Media media)
-        {
-            if (media?.Hash == null)
-            {
-                return;
-            }
-
-            if (!BatchedEntities.ContainsKey(media.Hash))
-            {
-                BatchedEntities[media.Hash] = media;
-            }
         }
 
         #endregion

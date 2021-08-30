@@ -1,6 +1,10 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using MediaStackCore.Controllers;
+using MediaStackCore.Extensions;
 using MediaStackCore.Models;
 using MediaStackCore.Services.UnitOfWorkService;
 using Microsoft.Extensions.Logging;
@@ -30,18 +34,32 @@ namespace MediaStack_API.Services.CLI_Background_Services.Background_Services
 
         #region Methods
 
-        public override void Execute()
+        public override async Task Execute(CancellationToken cancellationToken)
         {
             Logger.LogDebug("Creating New Media");
-            ExecuteWithData(this.fileSystemFSHelper.GetAllMediaData());
+            await ExecuteWithData(await this.getNewMediaData(), cancellationToken);
         }
 
-        protected override void ProcessData(object data)
+        protected override async Task ProcessData(object data)
         {
             if (data is MediaData mediaData)
             {
-                Logger.LogDebug($"Processing Media: {mediaData.Path}");
-                this.addMedia(this.createMediaIfNotExists(mediaData));
+                Logger.LogDebug($"Processing Media: {mediaData.RelativePath}");
+
+                using var unitOfWork = this.UnitOfWorkService.Create();
+
+                try
+                {
+                    var media = await unitOfWork.CreateNewMediaOrFixMediaPathAsync(this.fileSystemFSHelper, mediaData);
+                    if (media != null)
+                    {
+                        BatchedEntities[media.Hash] = media;
+                    }
+                }
+                catch (ArgumentException e)
+                {
+                    Logger.LogDebug($"Error processing {mediaData.RelativePath}: {e.Message}");
+                }
             }
         }
 
@@ -63,34 +81,13 @@ namespace MediaStack_API.Services.CLI_Background_Services.Background_Services
             BatchedEntities.Clear();
         }
 
-        private Media createMediaIfNotExists(MediaData mediaData)
+        private async Task<IEnumerable<MediaData>> getNewMediaData()
         {
-            using var unitOfWork = this.UnitOfWorkService.Create();
-            
-            if (!unitOfWork.Media.Get().Any(m => m.Path == this.fileSystemFSHelper.GetMediaDataRelativePath(mediaData)))
-            {
-                return this.createMedia(mediaData);
-            }
-
-            return null;
-        }
-
-        private Media createMedia(MediaData mediaData)
-        {
-            throw new NotImplementedException();
-        }
-
-        private void addMedia(Media media)
-        {
-            if (media?.Hash == null)
-            {
-                return;
-            }
-
-            if (!BatchedEntities.ContainsKey(media.Hash))
-            {
-                BatchedEntities[media.Hash] = media;
-            }
+            var mfc = new MediaFilesController(this.fileSystemFSHelper, this.UnitOfWorkService);
+            var mediaDataList = new List<MediaData>();
+            mfc.OnNewMediaFileFound += mediaDataList.Add;
+            await mfc.FindNewMedia();
+            return mediaDataList;
         }
 
         #endregion

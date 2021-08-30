@@ -9,6 +9,7 @@ using MediaStack_API.Models.ViewModels;
 using MediaStack_API.Services.Thumbnailer;
 using MediaStackCore.Controllers;
 using MediaStackCore.Data_Access_Layer;
+using MediaStackCore.Extensions;
 using MediaStackCore.Models;
 using MediaStackCore.Services.UnitOfWorkService;
 using Microsoft.AspNetCore.Cors;
@@ -80,20 +81,14 @@ namespace MediaStack_API.Controllers
                 return BadRequest(new BaseResponse(null, "No File"));
             }
 
-            Media media = new Media();
-            await using Stream stream = file.OpenReadStream();
-
-            media.Type = this.FSController.GetMediaDataStreamType(stream);
-            stream.Position = 0;
-            media.Hash = await this.FSController.Hasher.CalculateHashAsync(stream);
-
-            if (media.Type == null)
-            {
-                return BadRequest(new BaseResponse(null, "Invalid File Type"));
-            }
-
+            Media media = null;
             using (IUnitOfWork unitOfWork = this.UnitOfWorkService.Create())
             {
+                await using (Stream stream = file.OpenReadStream())
+                { 
+                    media = await unitOfWork.WriteStreamAndCreateMediaAsync(this.FSController, stream);
+                }
+                
                 lock (WriteLock)
                 {
                     Media potentialDuplicateMedia = unitOfWork.Media.Get().FirstOrDefault(m => m.Hash == media.Hash);
@@ -101,11 +96,6 @@ namespace MediaStack_API.Controllers
                     {
                         return Ok(new BaseResponse(this.Mapper.Map<MediaViewModel>(potentialDuplicateMedia)));
                     }
-
-                    stream.Position = 0;
-                    MediaData mediaData = this.FSController.WriteMediaStream(media, stream);
-
-                    media.Path = this.FSController.GetMediaDataRelativePath(mediaData);
 
                     unitOfWork.Media.Insert(media);
                     unitOfWork.Save();

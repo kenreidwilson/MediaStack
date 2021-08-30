@@ -1,4 +1,6 @@
 ﻿using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using MediaStackCore.Controllers;
 using MediaStackCore.Models;
 using MediaStackCore.Services.UnitOfWorkService;
@@ -29,13 +31,13 @@ namespace MediaStack_API.Services.CLI_Background_Services.Background_Services
 
         #region Methods
 
-        public override void Execute()
+        public override Task Execute(CancellationToken cancellationToken)
         {
             Logger.LogDebug("Creating Artists");
-            ExecuteWithData(this.FSController.GetArtistNames());
+            return ExecuteWithData(this.FSController.GetArtistNames(), cancellationToken);
         }
 
-        protected override void ProcessData(object data)
+        protected override Task ProcessData(object data)
         {
             if (data is string artistName)
             {
@@ -46,6 +48,8 @@ namespace MediaStack_API.Services.CLI_Background_Services.Background_Services
                     BatchedEntities[artistName] = potentialArtist;
                 }
             }
+
+            return Task.CompletedTask;
         }
 
         protected override void Save()

@@ -1,5 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using MediaStackCore.Controllers;
 using MediaStackCore.Models;
 using MediaStackCore.Services.UnitOfWorkService;
@@ -30,7 +32,7 @@ namespace MediaStack_API.Services.CLI_Background_Services.Background_Services
 
         #region Methods
 
-        public override void Execute()
+        public override Task Execute(CancellationToken cancellationToken)
         {
             this.Logger.LogDebug("Creating Albums");
             var artistNameAlbumNamesDictionary = this.FSController.GetArtistNameAlbumNamesDictionary();
@@ -44,10 +46,10 @@ namespace MediaStack_API.Services.CLI_Background_Services.Background_Services
                 albumNamesWithArtistNameFirst.AddRange(artistNameAlbumNamesDictionary[artistName]);
                 listOfAlbumNamesWithArtistNameFirst.Add(albumNamesWithArtistNameFirst);
             }
-            ExecuteWithData(listOfAlbumNamesWithArtistNameFirst);
+            return ExecuteWithData(listOfAlbumNamesWithArtistNameFirst, cancellationToken);
         }
 
-        protected override void ProcessData(object data)
+        protected override Task ProcessData(object data)
         {
             using var unitOfWork = this.UnitOfWorkService.Create();
             if (data is IEnumerable<string> albumNamesWithArtistNameFirst)
@@ -61,9 +63,8 @@ namespace MediaStack_API.Services.CLI_Background_Services.Background_Services
                         if (artist == null)
                         {
                             Logger.LogWarning($"Could not find Artist: {name}");
-                            return;
                         }
-                        this.Logger.LogDebug($"Processing {artist.Name}'s: Albums");
+                        this.Logger.LogDebug($"Processing {artist?.Name}'s: Albums");
                     }
                     else
                     {
@@ -78,6 +79,8 @@ namespace MediaStack_API.Services.CLI_Background_Services.Background_Services
 
                 }
             }
+
+            return Task.CompletedTask;
         }
 
         protected override void Save()
