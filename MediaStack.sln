@@ -5,9 +5,9 @@ VisualStudioVersion = 16.0.31105.61
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MediaStackCore", "MediaStack\MediaStackCore.csproj", "{8AD94480-5F8E-4CA9-A2B4-BAE61718A187}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MediaStackCore.Tests", "MediaStack Library Tests\MediaStackCore.Tests.csproj", "{08E66FCB-A5F0-4450-B352-9A65BC7D4C22}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MediaStack API", "MediaStack API\MediaStack API.csproj", "{59B69758-1F0E-41AC-8E50-CB2BE1FD203E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MediaStackCore.Tests", "MediaStackCore.Tests\MediaStackCore.Tests.csproj", "{D7401C97-E6C8-4497-9DA1-1FB7C0A8E35A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -19,14 +19,14 @@ Global
 		{8AD94480-5F8E-4CA9-A2B4-BAE61718A187}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8AD94480-5F8E-4CA9-A2B4-BAE61718A187}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8AD94480-5F8E-4CA9-A2B4-BAE61718A187}.Release|Any CPU.Build.0 = Release|Any CPU
-		{08E66FCB-A5F0-4450-B352-9A65BC7D4C22}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{08E66FCB-A5F0-4450-B352-9A65BC7D4C22}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{08E66FCB-A5F0-4450-B352-9A65BC7D4C22}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{08E66FCB-A5F0-4450-B352-9A65BC7D4C22}.Release|Any CPU.Build.0 = Release|Any CPU
 		{59B69758-1F0E-41AC-8E50-CB2BE1FD203E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{59B69758-1F0E-41AC-8E50-CB2BE1FD203E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{59B69758-1F0E-41AC-8E50-CB2BE1FD203E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{59B69758-1F0E-41AC-8E50-CB2BE1FD203E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D7401C97-E6C8-4497-9DA1-1FB7C0A8E35A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D7401C97-E6C8-4497-9DA1-1FB7C0A8E35A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D7401C97-E6C8-4497-9DA1-1FB7C0A8E35A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D7401C97-E6C8-4497-9DA1-1FB7C0A8E35A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
