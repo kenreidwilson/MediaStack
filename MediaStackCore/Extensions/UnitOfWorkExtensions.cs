@@ -156,22 +156,19 @@ namespace MediaStackCore.Extensions
                 tokenSource.Cancel();
             }
 
-            if (type == null)
-            {
-                throw new ArgumentException("Invalid Media Type");
-            }
-
             if (potentialDuplicate != null)
             {
                 if (potentialDuplicate.Path != null)
                 {
                     throw new ArgumentException("Duplicate Media");
                 }
-                else
-                {
-                    potentialDuplicate.Path = mediaData.RelativePath;
-                    return potentialDuplicate;
-                }
+                potentialDuplicate.Path = mediaData.RelativePath;
+                return potentialDuplicate;
+            }
+
+            if (type == null)
+            {
+                throw new ArgumentException("Invalid Media Type");
             }
 
             return new Media
