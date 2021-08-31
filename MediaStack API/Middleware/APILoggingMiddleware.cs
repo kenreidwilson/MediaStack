@@ -17,12 +17,10 @@ namespace MediaStack_API.Middleware
 
         #region Constructors
 
-        public APILoggingMiddleware(RequestDelegate next,
-            ILoggerFactory loggerFactory)
+        public APILoggingMiddleware(RequestDelegate next, ILogger<APILoggingMiddleware> logger)
         {
             this.next = next;
-            this.logger = loggerFactory
-                .CreateLogger<APILoggingMiddleware>();
+            this.logger = logger;
         }
 
         #endregion

@@ -25,7 +25,7 @@ namespace MediaStack_API.Services.CLI_Background_Services
 
         #region Constructors
 
-        public CLIBackgroundServiceHandler(IConfiguration configuration, ILogger logger,
+        public CLIBackgroundServiceHandler(IConfiguration configuration, ILogger<CLIBackgroundServiceHandler> logger,
             IUnitOfWorkService unitOfWorkService, IFileSystemController fsController)
         {
             this.Configuration = configuration;
@@ -53,9 +53,9 @@ namespace MediaStack_API.Services.CLI_Background_Services
         {
             if (this.Configuration.GetValue<bool>("createSections"))
             {
-                await this.RunCreateCategoriesService(stoppingToken);
-                await this.RunCreateArtistsService(stoppingToken);
-                await this.RunCreateAlbumService(stoppingToken);
+                //await this.RunCreateCategoriesService(stoppingToken);
+                //await this.RunCreateArtistsService(stoppingToken);
+                //await this.RunCreateAlbumService(stoppingToken);
             }
 
             if (this.Configuration.GetValue<bool>("createNew"))
@@ -65,7 +65,7 @@ namespace MediaStack_API.Services.CLI_Background_Services
 
             if (this.Configuration.GetValue<bool>("disableMissing"))
             {
-                await this.RunDisableMissingMediaService(stoppingToken);
+                //await this.RunDisableMissingMediaService(stoppingToken);
             }
 
             if (this.Configuration.GetValue<bool>("verify"))

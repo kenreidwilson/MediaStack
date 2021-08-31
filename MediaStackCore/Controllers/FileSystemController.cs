@@ -31,7 +31,7 @@ namespace MediaStackCore.Controllers
 
         #region Constructors
 
-        public FileSystemController(IFileSystem fileSystem, IHasher hasher, ILogger logger)
+        public FileSystemController(IFileSystem fileSystem, IHasher hasher, ILogger<FileSystemController> logger)
         {
             this.FileSystem = fileSystem;
 
@@ -55,7 +55,7 @@ namespace MediaStackCore.Controllers
 
         public bool DoesMediaFileExist(Media media)
         {
-            return this.FileSystem.File.Exists(this.GetMediaData(media).RelativePath);
+            return this.FileSystem.File.Exists(this.GetMediaData(media).FullPath);
         }
 
         public MediaData GetMediaData(Media media)

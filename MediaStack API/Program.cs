@@ -26,11 +26,6 @@ namespace MediaStack_API
                             .Build()
                     );
                     webBuilder.UseStartup<Startup>();
-                })
-                .ConfigureLogging(logging =>
-                {
-                    logging.ClearProviders();
-                    logging.AddConsole();
                 });
     }
 }
