@@ -46,6 +46,7 @@ namespace MediaStack_API.Services.CLI_Background_Services.Background_Services
 
             await Task.WhenAll(taskList);
             this.Save();
+            this.Logger.LogInformation("Done");
         }
 
         protected virtual async Task RunProcessDataTask(object data, CancellationToken cancellationToken)

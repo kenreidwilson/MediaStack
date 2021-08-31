@@ -20,7 +20,7 @@ namespace MediaStack_API.Services.CLI_Background_Services.Background_Services
 
         public override Task Execute(CancellationToken cancellationToken)
         {
-            Logger.LogDebug("Organizing Albums");
+            Logger.LogInformation("Organizing Albums");
             using (IUnitOfWork unitOfWork = this.UnitOfWorkService.Create())
             {
                 return ExecuteWithData(unitOfWork.Albums.Get(), cancellationToken);

@@ -36,7 +36,7 @@ namespace MediaStack_API.Services.CLI_Background_Services.Background_Services
 
         public override async Task Execute(CancellationToken cancellationToken)
         {
-            Logger.LogDebug("Creating New Media");
+            Logger.LogInformation("Creating New Media");
             await ExecuteWithData(await this.getNewMediaData(), cancellationToken);
         }
 
@@ -60,6 +60,7 @@ namespace MediaStack_API.Services.CLI_Background_Services.Background_Services
                 {
                     Logger.LogDebug($"Error processing {mediaData.RelativePath}: {e.Message}");
                 }
+                catch (TaskCanceledException) { }
             }
         }
 
@@ -67,13 +68,14 @@ namespace MediaStack_API.Services.CLI_Background_Services.Background_Services
         {
             using (var unitOfWork = this.UnitOfWorkService.Create())
             {
-                Logger.LogDebug("Saving Media");
+                Logger.LogDebug("Saving New Media");
                 unitOfWork.Media.BulkInsert(
                     BatchedEntities.Values
                                    .Where(media => media.ID == 0 && !unitOfWork.Media
                                                                                .Get()
                                                                                .Any(m => m.Hash == media.Hash))
                                    .ToList());
+
                 unitOfWork.Media.BulkUpdate(BatchedEntities.Values.Where(m => m.ID != 0).ToList());
                 unitOfWork.Save();
             }

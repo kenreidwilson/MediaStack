@@ -35,6 +35,7 @@ namespace MediaStack_API.Services.CLI_Background_Services.Background_Services
 
         public override async Task Execute(CancellationToken cancellationToken)
         {
+            this.Logger.LogInformation("Verifying Media");
             using var unitOfWork = this.UnitOfWorkService.Create();
 
             IList<Media> mediaWithChangedFile = new List<Media>();
@@ -74,6 +75,7 @@ namespace MediaStack_API.Services.CLI_Background_Services.Background_Services
 
         protected override void Save()
         {
+            Logger.LogDebug("Saving Verified Media");
             using (var unitOfWork = this.UnitOfWorkService.Create())
             {
                 unitOfWork.Media.BulkInsert(

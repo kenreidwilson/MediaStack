@@ -34,7 +34,7 @@ namespace MediaStack_API.Services.CLI_Background_Services.Background_Services
 
         public override Task Execute(CancellationToken cancellationToken)
         {
-            this.Logger.LogDebug("Creating Albums");
+            this.Logger.LogInformation("Creating Albums");
             var artistNameAlbumNamesDictionary = this.FSController.GetArtistNameAlbumNamesDictionary();
 
             List<IEnumerable<string>> listOfAlbumNamesWithArtistNameFirst = new List<IEnumerable<string>>();

@@ -1,9 +1,8 @@
-﻿using System.Linq;
+﻿using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using MediaStackCore.Controllers;
-using MediaStackCore.Data_Access_Layer;
-using MediaStackCore.Extensions;
 using MediaStackCore.Models;
 using MediaStackCore.Services.UnitOfWorkService;
 using Microsoft.Extensions.Logging;
@@ -33,59 +32,42 @@ namespace MediaStack_API.Services.CLI_Background_Services.Background_Services
 
         #region Methods
 
-        public override Task Execute(CancellationToken cancellationToken)
+        public override async Task Execute(CancellationToken cancellationToken)
         {
-            Logger.LogDebug("Disabling Missing Media");
-            var media = this.UnitOfWorkService.Create().Media.Get(m => m.Path != null);
-            return ExecuteWithData(media, cancellationToken);
+            Logger.LogInformation("Disabling Missing Media");
+            await ExecuteWithData(await this.getMissingMedia(), cancellationToken);
         }
 
         protected override Task ProcessData(object data)
         {
-            using (IUnitOfWork unitOfWork = this.UnitOfWorkService.Create())
+            if (data is Media media)
             {
-                if (data is Media media)
-                {
-                    if (!this.fileSystemFSHelper.DoesMediaFileExist(media))
-                    {
-                        unitOfWork.DisableMedia(media);
-                        this.addMedia(media);
-                    }
-                }
+                media.Path = null;
+                BatchedEntities[media.Hash] = media;
             }
-            
+
             return Task.CompletedTask;
         }
 
         protected override void Save()
         {
+            Logger.LogDebug("Saving Disabled Media");
             using (var unitOfWork = this.UnitOfWorkService.Create())
             {
-                Logger.LogDebug("Saving Media");
-                unitOfWork.Media.BulkInsert(
-                    BatchedEntities.Values
-                                   .Where(media => media.ID == 0 && !unitOfWork.Media
-                                                                               .Get()
-                                                                               .Any(m => m.Hash == media.Hash))
-                                   .ToList());
-                unitOfWork.Media.BulkUpdate(BatchedEntities.Values.Where(m => m.ID != 0).ToList());
+                unitOfWork.Media.BulkUpdate(BatchedEntities.Values.ToList());
                 unitOfWork.Save();
             }
 
             BatchedEntities.Clear();
         }
 
-        private void addMedia(Media media)
+        private async Task<IEnumerable<Media>> getMissingMedia()
         {
-            if (media?.Hash == null)
-            {
-                return;
-            }
-
-            if (!BatchedEntities.ContainsKey(media.Hash))
-            {
-                BatchedEntities[media.Hash] = media;
-            }
+            var missingMedia = new List<Media>();
+            var mfc = new MediaFilesController(this.fileSystemFSHelper, this.UnitOfWorkService);
+            mfc.OnMissingMediaFound += missingMedia.Add;
+            await mfc.FindMissingMedia();
+            return missingMedia;
         }
 
         #endregion
