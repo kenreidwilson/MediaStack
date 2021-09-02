@@ -3,13 +3,9 @@ using System.IO;
 using MediaStackCore.Models;
 using MediaStackCore.Services.HasherService;
 
-namespace MediaStackCore.Controllers
+namespace MediaStackCore.Services.MediaFilesService
 {
-    /// <summary>
-    ///     Defines functionality for a IMediaFileSystemController.
-    ///     Controls how Media is related to files on the filesystem.
-    /// </summary>
-    public interface IFileSystemController
+    public interface IMediaFilesService
     {
         #region Properties
 
@@ -35,12 +31,6 @@ namespace MediaStackCore.Controllers
 
         public IDictionary<string, IEnumerable<string>> GetArtistNameAlbumNamesDictionary();
 
-        /// <summary>
-        ///     Determines the type of the Media,
-        ///     null if can't determine.
-        /// </summary>
-        /// <param name="stream">The stream.</param>
-        /// <returns>System.Nullable&lt;MediaType&gt;.</returns>
         public MediaType? GetMediaDataStreamType(Stream stream);
 
         public MediaData MoveMediaFileToProperLocation(Media media);

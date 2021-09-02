@@ -1,8 +1,10 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
 using MediaStack_API.Services.CLI_Background_Services.Background_Services;
-using MediaStackCore.Controllers;
-using MediaStackCore.Services.UnitOfWorkService;
+using MediaStackCore.Services.MediaFilesService;
+using MediaStackCore.Services.MediaScannerService;
+using MediaStackCore.Services.MediaService;
+using MediaStackCore.Services.UnitOfWorkFactoryService;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -17,45 +19,52 @@ namespace MediaStack_API.Services.CLI_Background_Services
 
         protected ILogger Logger { get; }
 
-        protected IUnitOfWorkService UnitOfWorkService { get; }
+        protected IUnitOfWorkFactory UnitOfWorkFactory { get; }
 
-        protected IFileSystemController FileSystemController { get; }
+        protected IMediaFilesService MediaFilesService { get; }
+
+        protected IMediaService MediaService { get; }
+
+        protected IMediaScanner MediaScanner { get; }
 
         #endregion
 
         #region Constructors
 
         public CLIBackgroundServiceHandler(IConfiguration configuration, ILogger<CLIBackgroundServiceHandler> logger,
-            IUnitOfWorkService unitOfWorkService, IFileSystemController fsController)
+            IUnitOfWorkFactory unitOfWorkFactory, IMediaFilesService fsController, IMediaService mediaService, IMediaScanner mediaScanner)
         {
             this.Configuration = configuration;
             this.Logger = logger;
-            this.UnitOfWorkService = unitOfWorkService;
-            this.FileSystemController = fsController;
+            this.UnitOfWorkFactory = unitOfWorkFactory;
+            this.MediaFilesService = fsController;
+            this.MediaService = mediaService;
+            this.MediaScanner = mediaScanner;
         }
 
         #endregion
 
         #region Methods
 
-        protected override Task ExecuteAsync(CancellationToken stoppingToken)
+        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             if (this.Configuration.GetValue<bool>("background"))
             {
-                this.RunServices(stoppingToken);
-                return Task.CompletedTask;
+                //this.RunServices(stoppingToken);
             }
-
-            return this.RunServices(stoppingToken);
+            else
+            {
+                await this.RunServices(stoppingToken);
+            }
         }
 
         protected virtual async Task RunServices(CancellationToken stoppingToken)
         {
             if (this.Configuration.GetValue<bool>("createSections"))
             {
-                //await this.RunCreateCategoriesService(stoppingToken);
-                //await this.RunCreateArtistsService(stoppingToken);
-                //await this.RunCreateAlbumService(stoppingToken);
+                await this.RunCreateCategoriesService(stoppingToken);
+                await this.RunCreateArtistsService(stoppingToken);
+                await this.RunCreateAlbumService(stoppingToken);
             }
 
             if (this.Configuration.GetValue<bool>("createNew"))
@@ -65,7 +74,7 @@ namespace MediaStack_API.Services.CLI_Background_Services
 
             if (this.Configuration.GetValue<bool>("disableMissing"))
             {
-                //await this.RunDisableMissingMediaService(stoppingToken);
+                await this.RunDisableMissingMediaService(stoppingToken);
             }
 
             if (this.Configuration.GetValue<bool>("verify"))
@@ -79,45 +88,45 @@ namespace MediaStack_API.Services.CLI_Background_Services
             }
         }
 
-        protected virtual Task RunCreateAlbumService(CancellationToken stoppingToken)
+        protected virtual async Task RunCreateAlbumService(CancellationToken stoppingToken)
         {
-            return new CreateAlbumsService(this.Logger, this.UnitOfWorkService, this.FileSystemController)
+            await new CreateAlbumsService(this.Logger, this.UnitOfWorkFactory, this.MediaFilesService)
                 .Execute(stoppingToken);
         }
 
-        protected virtual Task RunCreateArtistsService(CancellationToken stoppingToken)
+        protected virtual async Task RunCreateArtistsService(CancellationToken stoppingToken)
         {
-            return new CreateArtistsService(this.Logger, this.UnitOfWorkService, this.FileSystemController)
+            await new CreateArtistsService(this.Logger, this.UnitOfWorkFactory, this.MediaFilesService)
                 .Execute(stoppingToken);
         }
 
-        protected virtual Task RunCreateCategoriesService(CancellationToken stoppingToken)
+        protected virtual async Task RunCreateCategoriesService(CancellationToken stoppingToken)
         {
-            return new CreateCategoriesService(this.Logger, this.UnitOfWorkService, this.FileSystemController)
+            await new CreateCategoriesService(this.Logger, this.UnitOfWorkFactory, this.MediaFilesService)
                 .Execute(stoppingToken);
         }
 
-        protected virtual Task RunCreateNewMediaService(CancellationToken stoppingToken)
+        protected virtual async Task RunCreateNewMediaService(CancellationToken stoppingToken)
         {
-            return new CreateNewMediaService(this.Logger, this.UnitOfWorkService, this.FileSystemController)
+            await new CreateNewMediaService(this.Logger, this.UnitOfWorkFactory, this.MediaService, this.MediaScanner)
                 .Execute(stoppingToken);
         }
 
-        protected virtual Task RunDisableMissingMediaService(CancellationToken stoppingToken)
+        protected virtual async Task RunDisableMissingMediaService(CancellationToken stoppingToken)
         {
-            return new DisableMissingMediaService(this.Logger, this.UnitOfWorkService, this.FileSystemController)
+            await new DisableMissingMediaService(this.Logger, this.UnitOfWorkFactory, this.MediaFilesService)
                 .Execute(stoppingToken);
         }
 
-        protected virtual Task RunOrganizeAlbumService(CancellationToken stoppingToken)
+        protected virtual async Task RunOrganizeAlbumService(CancellationToken stoppingToken)
         {
-            return new OrganizeAlbumService(this.Logger, this.UnitOfWorkService)
+            await new OrganizeAlbumService(this.Logger, this.UnitOfWorkFactory)
                 .Execute(stoppingToken);
         }
 
-        protected virtual Task RunVerifyMediaService(CancellationToken stoppingToken)
+        protected virtual async Task RunVerifyMediaService(CancellationToken stoppingToken)
         {
-            return new VerifyMediaService(this.Logger, this.UnitOfWorkService, this.FileSystemController)
+            await new VerifyMediaService(this.Logger, this.UnitOfWorkFactory, this.MediaService, this.MediaScanner)
                 .Execute(stoppingToken);
         }
 

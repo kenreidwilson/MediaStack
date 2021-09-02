@@ -5,7 +5,7 @@ using MediaStack_API.Models.Requests;
 using MediaStack_API.Models.Responses;
 using MediaStack_API.Models.ViewModels;
 using MediaStackCore.Models;
-using MediaStackCore.Services.UnitOfWorkService;
+using MediaStackCore.Services.UnitOfWorkFactoryService;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -18,7 +18,7 @@ namespace MediaStack_API.Controllers
     {
         #region Properties
 
-        protected IUnitOfWorkService UnitOfWorkService { get; }
+        protected IUnitOfWorkFactory UnitOfWorkFactory { get; }
 
         protected IMapper Mapper { get; }
 
@@ -28,9 +28,9 @@ namespace MediaStack_API.Controllers
 
         #region Constructors
 
-        public AlbumsController(IUnitOfWorkService unitOfWorkService, IMapper mapper)
+        public AlbumsController(IUnitOfWorkFactory unitOfWorkFactory, IMapper mapper)
         {
-            this.UnitOfWorkService = unitOfWorkService;
+            this.UnitOfWorkFactory = unitOfWorkFactory;
             this.Mapper = mapper;
         }
 
@@ -46,7 +46,7 @@ namespace MediaStack_API.Controllers
                 return BadRequest("You must provide a valid Album ID.");
             }
 
-            using (var unitOfWork = this.UnitOfWorkService.Create())
+            using (var unitOfWork = this.UnitOfWorkFactory.Create())
             {
                 var album = await unitOfWork.Albums
                                             .Get()
@@ -64,7 +64,7 @@ namespace MediaStack_API.Controllers
         [HttpPost]
         public async Task<IActionResult> Create([FromQuery] AlbumViewModel albumVm)
         {
-            using (var unitOfWork = this.UnitOfWorkService.Create())
+            using (var unitOfWork = this.UnitOfWorkFactory.Create())
             {
                 if (!ModelState.IsValid || albumVm.ID != 0 || !await unitOfWork.Artists.Get().AnyAsync(a => a.ID == albumVm.ArtistID))
                 {
@@ -94,7 +94,7 @@ namespace MediaStack_API.Controllers
         [HttpGet("Search")]
         public async Task<IActionResult> Search([FromQuery] AlbumSearchQuery albumQuery)
         {
-            using (var unitOfWork = this.UnitOfWorkService.Create())
+            using (var unitOfWork = this.UnitOfWorkFactory.Create())
             {
                 var query = albumQuery.GetQuery(unitOfWork);
                 var total = await query.CountAsync();
@@ -111,7 +111,7 @@ namespace MediaStack_API.Controllers
         [HttpPut("Sort")]
         public async Task<IActionResult> Sort([FromQuery] AlbumSortRequest request)
         {
-            using (var unitOfWork = this.UnitOfWorkService.Create())
+            using (var unitOfWork = this.UnitOfWorkFactory.Create())
             {
                 if (!ModelState.IsValid || !unitOfWork.Albums.Get().Any(a => a.ID == request.AlbumID))
                 {

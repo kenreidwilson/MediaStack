@@ -1,9 +1,7 @@
 using MediaStack_API.Infrastructure;
 using MediaStack_API.Middleware;
 using MediaStack_API.Services.Thumbnailer;
-using MediaStackCore.Controllers;
 using MediaStackCore.Data_Access_Layer;
-using MediaStackCore.Services.UnitOfWorkService;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
@@ -13,7 +11,10 @@ using Microsoft.Extensions.Hosting;
 using System.IO.Abstractions;
 using MediaStack_API.Services.CLI_Background_Services;
 using MediaStackCore.Services.HasherService;
-using Microsoft.Extensions.Logging;
+using MediaStackCore.Services.MediaFilesService;
+using MediaStackCore.Services.MediaScannerService;
+using MediaStackCore.Services.MediaService;
+using MediaStackCore.Services.UnitOfWorkFactoryService;
 
 namespace MediaStack_API
 {
@@ -59,10 +60,12 @@ namespace MediaStack_API
             services.AddControllers();
 
             services.AddTransient<DbContext, MediaStackContext>();
-            services.AddTransient<IUnitOfWorkService, UnitOfWorkService>();
+            services.AddTransient<IUnitOfWorkFactory, UnitOfWorkFactory>();
             services.AddTransient<IFileSystem, FileSystem>();
             services.AddTransient<IHasher, SH1Hasher>();
-            services.AddSingleton<IFileSystemController, FileSystemController>();
+            services.AddSingleton<IMediaFilesService, MediaFilesService>();
+            services.AddTransient<IMediaScanner, MediaScanner>();
+            services.AddSingleton<IMediaService, MediaService>();
             services.AddSingleton<IThumbnailer, Thumbnailer>();
 
             services.AddAutoMapper(typeof(DefaultAutoMapperProfile));

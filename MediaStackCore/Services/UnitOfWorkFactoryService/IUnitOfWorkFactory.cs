@@ -1,8 +1,8 @@
 ﻿using MediaStackCore.Data_Access_Layer;
 
-namespace MediaStackCore.Services.UnitOfWorkService
+namespace MediaStackCore.Services.UnitOfWorkFactoryService
 {
-    public interface IUnitOfWorkService
+    public interface IUnitOfWorkFactory
     {
         #region Methods
 

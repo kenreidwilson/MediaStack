@@ -1,5 +1,4 @@
 ﻿using System;
-using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using AutoMapper;
@@ -7,11 +6,10 @@ using MediaStack_API.Models.Requests;
 using MediaStack_API.Models.Responses;
 using MediaStack_API.Models.ViewModels;
 using MediaStack_API.Services.Thumbnailer;
-using MediaStackCore.Controllers;
-using MediaStackCore.Data_Access_Layer;
-using MediaStackCore.Extensions;
 using MediaStackCore.Models;
-using MediaStackCore.Services.UnitOfWorkService;
+using MediaStackCore.Services.MediaFilesService;
+using MediaStackCore.Services.MediaService;
+using MediaStackCore.Services.UnitOfWorkFactoryService;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -23,30 +21,38 @@ namespace MediaStack_API.Controllers
     [Route("/[controller]")]
     public class MediaController : Controller
     {
-        #region Properties
-
-        protected IFileSystemController FSController { get; }
-
-        protected IUnitOfWorkService UnitOfWorkService { get; }
-
-        protected IMapper Mapper { get; }
-
-        protected IThumbnailer Thumbnailer { get; }
+        #region Data members
 
         private static readonly object WriteLock = new();
 
         #endregion
 
+        #region Properties
+
+        protected IUnitOfWorkFactory UnitOfWorkFactory { get; }
+
+        protected IMapper Mapper { get; }
+
+        protected IMediaService MediaService { get; }
+
+        protected IMediaFilesService MediaFilesService { get; }
+
+        protected IThumbnailer Thumbnailer { get; }
+
+        #endregion
+
         #region Constructors
 
-        public MediaController(IUnitOfWorkService unitOfWorkService,
+        public MediaController(IUnitOfWorkFactory unitOfWorkFactory,
             IMapper mapper,
-            IFileSystemController fsController,
+            IMediaService mediaService,
+            IMediaFilesService mediaFilesService,
             IThumbnailer thumbnailer)
         {
-            this.UnitOfWorkService = unitOfWorkService;
+            this.UnitOfWorkFactory = unitOfWorkFactory;
             this.Mapper = mapper;
-            this.FSController = fsController;
+            this.MediaService = mediaService;
+            this.MediaFilesService = mediaFilesService;
             this.Thumbnailer = thumbnailer;
         }
 
@@ -57,12 +63,12 @@ namespace MediaStack_API.Controllers
         [HttpGet]
         public async Task<IActionResult> Read([FromQuery] MediaViewModel potentialMedia)
         {
-            using (var unitOfWork = this.UnitOfWorkService.Create())
+            using (var unitOfWork = this.UnitOfWorkFactory.Create())
             {
                 var media = await unitOfWork.Media
-                                      .Get()
-                                      .Include(m => m.Tags)
-                                      .FirstOrDefaultAsync(m => m.ID == potentialMedia.ID);
+                                            .Get()
+                                            .Include(m => m.Tags)
+                                            .FirstOrDefaultAsync(m => m.ID == potentialMedia.ID);
 
                 if (media == null)
                 {
@@ -82,16 +88,16 @@ namespace MediaStack_API.Controllers
             }
 
             Media media = null;
-            using (IUnitOfWork unitOfWork = this.UnitOfWorkService.Create())
+            using (var unitOfWork = this.UnitOfWorkFactory.Create())
             {
-                await using (Stream stream = file.OpenReadStream())
-                { 
-                    media = await unitOfWork.WriteStreamAndCreateMediaAsync(this.FSController, stream);
+                await using (var stream = file.OpenReadStream())
+                {
+                    media = await this.MediaService.WriteStreamAndCreateMediaAsync(stream);
                 }
-                
+
                 lock (WriteLock)
                 {
-                    Media potentialDuplicateMedia = unitOfWork.Media.Get().FirstOrDefault(m => m.Hash == media.Hash);
+                    var potentialDuplicateMedia = unitOfWork.Media.Get().FirstOrDefault(m => m.Hash == media.Hash);
                     if (potentialDuplicateMedia != null)
                     {
                         return Ok(new BaseResponse(this.Mapper.Map<MediaViewModel>(potentialDuplicateMedia)));
@@ -114,7 +120,7 @@ namespace MediaStack_API.Controllers
             }
 
             Media newMedia;
-            using (var unitOfWork = this.UnitOfWorkService.Create())
+            using (var unitOfWork = this.UnitOfWorkFactory.Create())
             {
                 try
                 {
@@ -145,7 +151,7 @@ namespace MediaStack_API.Controllers
                 return BadRequest();
             }
 
-            using (var unitOfWork = this.UnitOfWorkService.Create())
+            using (var unitOfWork = this.UnitOfWorkFactory.Create())
             {
                 var query = searchQuery.GetQuery(unitOfWork);
                 var total = query.Count();
@@ -167,7 +173,7 @@ namespace MediaStack_API.Controllers
                 return BadRequest();
             }
 
-            using (var unitOfWork = this.UnitOfWorkService.Create())
+            using (var unitOfWork = this.UnitOfWorkFactory.Create())
             {
                 var media = await unitOfWork.Media.Get(m => m.ID == potentialMedia.ID).FirstOrDefaultAsync();
                 if (media == null)
@@ -177,7 +183,7 @@ namespace MediaStack_API.Controllers
 
                 try
                 {
-                    return File(await this.FSController.GetMediaData(media).GetDataBytesAsync(), 
+                    return File(await this.MediaFilesService.GetMediaData(media).GetDataBytesAsync(),
                         media.Type == MediaType.Video ? "video/mp4" : "image/png");
                 }
                 catch (Exception)
@@ -195,7 +201,7 @@ namespace MediaStack_API.Controllers
                 return BadRequest();
             }
 
-            using (var unitOfWork = this.UnitOfWorkService.Create())
+            using (var unitOfWork = this.UnitOfWorkFactory.Create())
             {
                 var media = await unitOfWork.Media.Get(m => m.ID == potentialMedia.ID).FirstOrDefaultAsync();
                 if (media == null)

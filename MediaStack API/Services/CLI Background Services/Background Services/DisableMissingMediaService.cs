@@ -2,9 +2,10 @@
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using MediaStackCore.Controllers;
 using MediaStackCore.Models;
-using MediaStackCore.Services.UnitOfWorkService;
+using MediaStackCore.Services.MediaFilesService;
+using MediaStackCore.Services.MediaScannerService;
+using MediaStackCore.Services.UnitOfWorkFactoryService;
 using Microsoft.Extensions.Logging;
 
 namespace MediaStack_API.Services.CLI_Background_Services.Background_Services
@@ -13,19 +14,19 @@ namespace MediaStack_API.Services.CLI_Background_Services.Background_Services
     {
         #region Data members
 
-        protected IUnitOfWorkService UnitOfWorkService;
+        protected IUnitOfWorkFactory unitOfWorkFactory;
 
-        protected IFileSystemController fileSystemFSHelper;
+        protected IMediaFilesService mediaFilesService;
 
         #endregion
 
         #region Constructors
 
-        public DisableMissingMediaService(ILogger logger, IUnitOfWorkService unitOfWorkService,
-            IFileSystemController fsHelper) : base(logger)
+        public DisableMissingMediaService(ILogger logger, IUnitOfWorkFactory unitOfWorkFactory,
+            IMediaFilesService fsHelper) : base(logger)
         {
-            this.UnitOfWorkService = unitOfWorkService;
-            this.fileSystemFSHelper = fsHelper;
+            this.unitOfWorkFactory = unitOfWorkFactory;
+            this.mediaFilesService = fsHelper;
         }
 
         #endregion
@@ -52,7 +53,7 @@ namespace MediaStack_API.Services.CLI_Background_Services.Background_Services
         protected override void Save()
         {
             Logger.LogDebug("Saving Disabled Media");
-            using (var unitOfWork = this.UnitOfWorkService.Create())
+            using (var unitOfWork = this.unitOfWorkFactory.Create())
             {
                 unitOfWork.Media.BulkUpdate(BatchedEntities.Values.ToList());
                 unitOfWork.Save();
@@ -64,7 +65,7 @@ namespace MediaStack_API.Services.CLI_Background_Services.Background_Services
         private async Task<IEnumerable<Media>> getMissingMedia()
         {
             var missingMedia = new List<Media>();
-            var mfc = new MediaFilesController(this.fileSystemFSHelper, this.UnitOfWorkService);
+            var mfc = new MediaScanner(this.mediaFilesService, this.unitOfWorkFactory);
             mfc.OnMissingMediaFound += missingMedia.Add;
             await mfc.FindMissingMedia();
             return missingMedia;

@@ -4,24 +4,24 @@ using System.Threading;
 using System.Threading.Tasks;
 using MediaStackCore.Data_Access_Layer;
 using MediaStackCore.Models;
-using MediaStackCore.Services.UnitOfWorkService;
+using MediaStackCore.Services.UnitOfWorkFactoryService;
 using Microsoft.Extensions.Logging;
 
 namespace MediaStack_API.Services.CLI_Background_Services.Background_Services
 {
     public class OrganizeAlbumService : BatchedParallelService<Media>
     {
-        protected IUnitOfWorkService UnitOfWorkService;
+        protected IUnitOfWorkFactory unitOfWorkFactory;
 
-        public OrganizeAlbumService(ILogger logger, IUnitOfWorkService unitOfWorkService) : base(logger)
+        public OrganizeAlbumService(ILogger logger, IUnitOfWorkFactory unitOfWorkFactory) : base(logger)
         {
-            this.UnitOfWorkService = unitOfWorkService;
+            this.unitOfWorkFactory = unitOfWorkFactory;
         }
 
         public override Task Execute(CancellationToken cancellationToken)
         {
             Logger.LogInformation("Organizing Albums");
-            using (IUnitOfWork unitOfWork = this.UnitOfWorkService.Create())
+            using (IUnitOfWork unitOfWork = this.unitOfWorkFactory.Create())
             {
                 return ExecuteWithData(unitOfWork.Albums.Get(), cancellationToken);
             }
@@ -31,7 +31,7 @@ namespace MediaStack_API.Services.CLI_Background_Services.Background_Services
         {
             if (data is Album album)
             {
-                using (IUnitOfWork unitOfWork = this.UnitOfWorkService.Create())
+                using (IUnitOfWork unitOfWork = this.unitOfWorkFactory.Create())
                 {
                     IQueryable<Media> mediaQuery = unitOfWork.Media.Get(m => m.AlbumID == album.ID);
                     if (mediaQuery.All(m => m.AlbumOrder == -1))
@@ -51,7 +51,7 @@ namespace MediaStack_API.Services.CLI_Background_Services.Background_Services
 
         protected override void Save()
         {
-            using (var unitOfWork = this.UnitOfWorkService.Create())
+            using (var unitOfWork = this.unitOfWorkFactory.Create())
             {
                 Logger.LogDebug("Saving Organized Media");
                 unitOfWork.Media.BulkUpdate(BatchedEntities.Values.ToList());

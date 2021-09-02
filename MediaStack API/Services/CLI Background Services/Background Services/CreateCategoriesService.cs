@@ -2,9 +2,9 @@
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using MediaStackCore.Controllers;
 using MediaStackCore.Models;
-using MediaStackCore.Services.UnitOfWorkService;
+using MediaStackCore.Services.MediaFilesService;
+using MediaStackCore.Services.UnitOfWorkFactoryService;
 using Microsoft.Extensions.Logging;
 
 namespace MediaStack_API.Services.CLI_Background_Services.Background_Services
@@ -13,19 +13,19 @@ namespace MediaStack_API.Services.CLI_Background_Services.Background_Services
     {
         #region Data members
 
-        protected IUnitOfWorkService UnitOfWorkService;
+        protected IUnitOfWorkFactory unitOfWorkFactory;
 
-        protected IFileSystemController FSController;
+        protected IMediaFilesService FSController;
 
         #endregion
 
         #region Constructors
 
-        public CreateCategoriesService(ILogger logger, IUnitOfWorkService unitOfWorkService,
-            IFileSystemController fsController) : base(logger)
+        public CreateCategoriesService(ILogger logger, IUnitOfWorkFactory unitOfWorkFactory,
+            IMediaFilesService fsController) : base(logger)
         {
             this.FSController = fsController;
-            this.UnitOfWorkService = unitOfWorkService;
+            this.unitOfWorkFactory = unitOfWorkFactory;
         }
 
         #endregion
@@ -57,7 +57,7 @@ namespace MediaStack_API.Services.CLI_Background_Services.Background_Services
         protected override void Save()
         {
             Logger.LogDebug("Saving Categories");
-            using var unitOfWork = this.UnitOfWorkService.Create();
+            using var unitOfWork = this.unitOfWorkFactory.Create();
             unitOfWork.Categories.BulkInsert(BatchedEntities.Values.ToList());
             unitOfWork.Save();
             BatchedEntities.Clear();
@@ -65,7 +65,7 @@ namespace MediaStack_API.Services.CLI_Background_Services.Background_Services
 
         private Category getCategoryIfNotExists(string categoryName)
         {
-            using var unitOfWork = this.UnitOfWorkService.Create();
+            using var unitOfWork = this.unitOfWorkFactory.Create();
             if (!unitOfWork.Categories.Get().Any(c => c.Name == categoryName))
             {
                 return new Category {Name = categoryName};

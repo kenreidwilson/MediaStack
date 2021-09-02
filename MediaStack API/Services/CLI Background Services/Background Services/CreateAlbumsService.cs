@@ -2,9 +2,9 @@
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using MediaStackCore.Controllers;
 using MediaStackCore.Models;
-using MediaStackCore.Services.UnitOfWorkService;
+using MediaStackCore.Services.MediaFilesService;
+using MediaStackCore.Services.UnitOfWorkFactoryService;
 using Microsoft.Extensions.Logging;
 
 namespace MediaStack_API.Services.CLI_Background_Services.Background_Services
@@ -13,19 +13,19 @@ namespace MediaStack_API.Services.CLI_Background_Services.Background_Services
     {
         #region Data members
 
-        protected IUnitOfWorkService UnitOfWorkService;
+        protected IUnitOfWorkFactory unitOfWorkFactory;
 
-        protected IFileSystemController FSController;
+        protected IMediaFilesService FSController;
 
         #endregion
 
         #region Constructors
 
-        public CreateAlbumsService(ILogger logger, IUnitOfWorkService unitOfWorkService, 
-            IFileSystemController fsController) : base(logger)
+        public CreateAlbumsService(ILogger logger, IUnitOfWorkFactory unitOfWorkFactory, 
+            IMediaFilesService fsController) : base(logger)
         {
             this.FSController = fsController;
-            this.UnitOfWorkService = unitOfWorkService;
+            this.unitOfWorkFactory = unitOfWorkFactory;
         }
 
         #endregion
@@ -51,7 +51,7 @@ namespace MediaStack_API.Services.CLI_Background_Services.Background_Services
 
         protected override Task ProcessData(object data)
         {
-            using var unitOfWork = this.UnitOfWorkService.Create();
+            using var unitOfWork = this.unitOfWorkFactory.Create();
             if (data is IEnumerable<string> albumNamesWithArtistNameFirst)
             {
                 Artist artist = null;
@@ -86,7 +86,7 @@ namespace MediaStack_API.Services.CLI_Background_Services.Background_Services
         protected override void Save()
         {
             this.Logger.LogDebug("Saving Albums");
-            using var unitOfWork = this.UnitOfWorkService.Create();
+            using var unitOfWork = this.unitOfWorkFactory.Create();
             unitOfWork.Albums.BulkInsert(BatchedEntities.Values.ToList());
             unitOfWork.Save();
             BatchedEntities.Clear();
@@ -94,7 +94,7 @@ namespace MediaStack_API.Services.CLI_Background_Services.Background_Services
 
         private Album getAlbumIfNotExists(Artist artist, string albumName)
         {
-            using var unitOfWork = this.UnitOfWorkService.Create();
+            using var unitOfWork = this.unitOfWorkFactory.Create();
             if (!unitOfWork.Albums.Get().Any(a => a.ArtistID == artist.ID && a.Name == albumName))
             {
                 return new Album {ArtistID = artist.ID, Name = albumName};

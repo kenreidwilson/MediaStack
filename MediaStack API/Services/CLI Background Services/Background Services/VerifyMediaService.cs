@@ -2,10 +2,11 @@
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using MediaStackCore.Controllers;
 using MediaStackCore.Extensions;
 using MediaStackCore.Models;
-using MediaStackCore.Services.UnitOfWorkService;
+using MediaStackCore.Services.MediaScannerService;
+using MediaStackCore.Services.MediaService;
+using MediaStackCore.Services.UnitOfWorkFactoryService;
 using Microsoft.Extensions.Logging;
 
 namespace MediaStack_API.Services.CLI_Background_Services.Background_Services
@@ -14,19 +15,23 @@ namespace MediaStack_API.Services.CLI_Background_Services.Background_Services
     {
         #region Data members
 
-        protected IUnitOfWorkService UnitOfWorkService;
+        protected IUnitOfWorkFactory unitOfWorkFactory;
 
-        protected IFileSystemController fileSystemFSHelper;
+        protected IMediaService mediaService;
+
+        protected IMediaScanner mediaScanner;
 
         #endregion
 
         #region Constructors
 
-        public VerifyMediaService(ILogger logger, IUnitOfWorkService unitOfWorkService, IFileSystemController helper)
+        public VerifyMediaService(ILogger logger, IUnitOfWorkFactory unitOfWorkFactory, IMediaService mediaService,
+            IMediaScanner mediaScanner)
             : base(logger)
         {
-            this.UnitOfWorkService = unitOfWorkService;
-            this.fileSystemFSHelper = helper;
+            this.unitOfWorkFactory = unitOfWorkFactory;
+            this.mediaService = mediaService;
+            this.mediaScanner = mediaScanner;
         }
 
         #endregion
@@ -35,21 +40,16 @@ namespace MediaStack_API.Services.CLI_Background_Services.Background_Services
 
         public override async Task Execute(CancellationToken cancellationToken)
         {
-            this.Logger.LogInformation("Verifying Media");
-            using var unitOfWork = this.UnitOfWorkService.Create();
+            Logger.LogInformation("Verifying Media");
+            using var unitOfWork = this.unitOfWorkFactory.Create();
 
             IList<Media> mediaWithChangedFile = new List<Media>();
             IList<MediaData> mediaDataWhoReplaceOldMediaFile = new List<MediaData>();
 
-            var mfc = new MediaFilesController(this.fileSystemFSHelper, this.UnitOfWorkService);
+            this.mediaScanner.OnMissingMediaFound += mediaWithChangedFile.Add;
+            this.mediaScanner.OnNewMediaFileFound += mediaDataWhoReplaceOldMediaFile.Add;
 
-            mfc.OnMediaFileChanged += (media, mediaData) =>
-            {
-                mediaWithChangedFile.Add(media);
-                mediaDataWhoReplaceOldMediaFile.Add(mediaData);
-            };
-
-            await mfc.FindChangedMediaFiles();
+            await this.mediaScanner.FindChangedMediaFiles();
             await ExecuteWithData(mediaWithChangedFile, cancellationToken);
             await ExecuteWithData(mediaDataWhoReplaceOldMediaFile, cancellationToken);
         }
@@ -58,13 +58,12 @@ namespace MediaStack_API.Services.CLI_Background_Services.Background_Services
         {
             if (data is Media media)
             {
-                BatchedEntities[media.Hash] = this.UnitOfWorkService.Create().DisableMedia(media);
+                BatchedEntities[media.Hash] = this.unitOfWorkFactory.Create().DisableMedia(media);
             }
 
             if (data is MediaData mediaData)
             {
-                var newMedia = await this.UnitOfWorkService.Create()
-                                         .CreateNewMediaOrFixMediaPathAsync(this.fileSystemFSHelper, mediaData);
+                var newMedia = await this.mediaService.CreateNewMediaOrFixMediaPathAsync(mediaData);
 
                 if (newMedia != null)
                 {
@@ -76,7 +75,7 @@ namespace MediaStack_API.Services.CLI_Background_Services.Background_Services
         protected override void Save()
         {
             Logger.LogDebug("Saving Verified Media");
-            using (var unitOfWork = this.UnitOfWorkService.Create())
+            using (var unitOfWork = this.unitOfWorkFactory.Create())
             {
                 unitOfWork.Media.BulkInsert(
                     BatchedEntities.Values

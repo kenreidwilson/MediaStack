@@ -3,10 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using MediaStackCore.Controllers;
-using MediaStackCore.Extensions;
 using MediaStackCore.Models;
-using MediaStackCore.Services.UnitOfWorkService;
+using MediaStackCore.Services.MediaScannerService;
+using MediaStackCore.Services.MediaService;
+using MediaStackCore.Services.UnitOfWorkFactoryService;
 using Microsoft.Extensions.Logging;
 
 namespace MediaStack_API.Services.CLI_Background_Services.Background_Services
@@ -15,19 +15,22 @@ namespace MediaStack_API.Services.CLI_Background_Services.Background_Services
     {
         #region Data members
 
-        protected IUnitOfWorkService UnitOfWorkService;
+        protected IUnitOfWorkFactory unitOfWorkFactory;
 
-        protected IFileSystemController fileSystemFSHelper;
+        protected IMediaService mediaService;
+
+        protected IMediaScanner mediaScanner;
 
         #endregion
 
         #region Constructors
 
-        public CreateNewMediaService(ILogger logger, IUnitOfWorkService unitOfWorkService,
-            IFileSystemController fsHelper) : base(logger)
+        public CreateNewMediaService(ILogger logger, IUnitOfWorkFactory unitOfWorkFactory,
+            IMediaService mediaService, IMediaScanner mediaScanner) : base(logger)
         {
-            this.UnitOfWorkService = unitOfWorkService;
-            this.fileSystemFSHelper = fsHelper;
+            this.unitOfWorkFactory = unitOfWorkFactory;
+            this.mediaService = mediaService;
+            this.mediaScanner = mediaScanner;
         }
 
         #endregion
@@ -46,11 +49,11 @@ namespace MediaStack_API.Services.CLI_Background_Services.Background_Services
             {
                 Logger.LogDebug($"Processing Media: {mediaData.RelativePath}");
 
-                using var unitOfWork = this.UnitOfWorkService.Create();
+                using var unitOfWork = this.unitOfWorkFactory.Create();
 
                 try
                 {
-                    var media = await unitOfWork.CreateNewMediaOrFixMediaPathAsync(this.fileSystemFSHelper, mediaData);
+                    var media = await this.mediaService.CreateNewMediaOrFixMediaPathAsync(mediaData);
                     if (media != null)
                     {
                         BatchedEntities[media.Hash] = media;
@@ -60,13 +63,15 @@ namespace MediaStack_API.Services.CLI_Background_Services.Background_Services
                 {
                     Logger.LogDebug($"Error processing {mediaData.RelativePath}: {e.Message}");
                 }
-                catch (TaskCanceledException) { }
+                catch (TaskCanceledException)
+                {
+                }
             }
         }
 
         protected override void Save()
         {
-            using (var unitOfWork = this.UnitOfWorkService.Create())
+            using (var unitOfWork = this.unitOfWorkFactory.Create())
             {
                 Logger.LogDebug("Saving New Media");
                 unitOfWork.Media.BulkInsert(
@@ -85,10 +90,9 @@ namespace MediaStack_API.Services.CLI_Background_Services.Background_Services
 
         private async Task<IEnumerable<MediaData>> getNewMediaData()
         {
-            var mfc = new MediaFilesController(this.fileSystemFSHelper, this.UnitOfWorkService);
             var mediaDataList = new List<MediaData>();
-            mfc.OnNewMediaFileFound += mediaDataList.Add;
-            await mfc.FindNewMedia();
+            this.mediaScanner.OnNewMediaFileFound += mediaDataList.Add;
+            await this.mediaScanner.FindNewMedia();
             return mediaDataList;
         }
 

@@ -5,7 +5,7 @@ using MediaStack_API.Models.Requests;
 using MediaStack_API.Models.Responses;
 using MediaStack_API.Models.ViewModels;
 using MediaStackCore.Models;
-using MediaStackCore.Services.UnitOfWorkService;
+using MediaStackCore.Services.UnitOfWorkFactoryService;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -18,7 +18,7 @@ namespace MediaStack_API.Controllers
     {
         #region Properties
 
-        protected IUnitOfWorkService UnitOfWorkService { get; }
+        protected IUnitOfWorkFactory UnitOfWorkFactory { get; }
 
         protected IMapper Mapper { get; }
 
@@ -28,9 +28,9 @@ namespace MediaStack_API.Controllers
 
         #region Constructors
 
-        public ArtistsController(IUnitOfWorkService unitOfWorkService, IMapper mapper)
+        public ArtistsController(IUnitOfWorkFactory unitOfWorkFactory, IMapper mapper)
         {
-            this.UnitOfWorkService = unitOfWorkService;
+            this.UnitOfWorkFactory = unitOfWorkFactory;
             this.Mapper = mapper;
         }
 
@@ -40,7 +40,7 @@ namespace MediaStack_API.Controllers
 
         public async Task<IActionResult> Read([FromQuery] ArtistViewModel potentialArtist)
         {
-            using (var unitOfWork = this.UnitOfWorkService.Create())
+            using (var unitOfWork = this.UnitOfWorkFactory.Create())
             {
                 var artist = await unitOfWork.Artists
                                              .Get()
@@ -63,7 +63,7 @@ namespace MediaStack_API.Controllers
                 return BadRequest();
             }
 
-            using (var unitOfWork = this.UnitOfWorkService.Create())
+            using (var unitOfWork = this.UnitOfWorkFactory.Create())
             {
                 Artist artist = await unitOfWork.Artists.Get().FirstOrDefaultAsync(a => a.Name == artistVm.Name);
                 if (artist == null)
@@ -82,7 +82,7 @@ namespace MediaStack_API.Controllers
         [HttpGet("Search")]
         public async Task<IActionResult> Search([FromQuery] ArtistSearchQuery artistQuery)
         {
-            using (var unitOfWork = this.UnitOfWorkService.Create())
+            using (var unitOfWork = this.UnitOfWorkFactory.Create())
             {
                 var query = artistQuery.GetQuery(unitOfWork);
                 var total = await query.CountAsync();

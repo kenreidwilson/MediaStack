@@ -5,7 +5,7 @@ using MediaStack_API.Models.Requests;
 using MediaStack_API.Models.Responses;
 using MediaStack_API.Models.ViewModels;
 using MediaStackCore.Models;
-using MediaStackCore.Services.UnitOfWorkService;
+using MediaStackCore.Services.UnitOfWorkFactoryService;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -18,7 +18,7 @@ namespace MediaStack_API.Controllers
     {
         #region Properties
 
-        protected IUnitOfWorkService UnitOfWorkService { get; }
+        protected IUnitOfWorkFactory UnitOfWorkFactory { get; }
 
         protected IMapper Mapper { get; }
 
@@ -28,9 +28,9 @@ namespace MediaStack_API.Controllers
 
         #region Constructors
 
-        public CategoriesController(IUnitOfWorkService unitOfWorkService, IMapper mapper)
+        public CategoriesController(IUnitOfWorkFactory unitOfWorkFactory, IMapper mapper)
         {
-            this.UnitOfWorkService = unitOfWorkService;
+            this.UnitOfWorkFactory = unitOfWorkFactory;
             this.Mapper = mapper;
         }
 
@@ -40,7 +40,7 @@ namespace MediaStack_API.Controllers
 
         public async Task<IActionResult> Read([FromQuery] CategoryViewModel potentialCategory)
         {
-            using (var unitOfWork = this.UnitOfWorkService.Create())
+            using (var unitOfWork = this.UnitOfWorkFactory.Create())
             {
                 var category = await unitOfWork.Categories
                                                .Get()
@@ -63,7 +63,7 @@ namespace MediaStack_API.Controllers
                 return BadRequest();
             }
 
-            using (var unitOfWork = this.UnitOfWorkService.Create())
+            using (var unitOfWork = this.UnitOfWorkFactory.Create())
             {
                 Category category = await unitOfWork.Categories.Get().FirstOrDefaultAsync(c => c.Name == categoryVm.Name);
 
@@ -83,7 +83,7 @@ namespace MediaStack_API.Controllers
         [HttpGet("Search")]
         public async Task<IActionResult> Search([FromQuery] CategorySearchQuery categoryQuery)
         {
-            using (var unitOfWork = this.UnitOfWorkService.Create())
+            using (var unitOfWork = this.UnitOfWorkFactory.Create())
             {
                 var query = categoryQuery.GetQuery(unitOfWork);
                 var total = await query.CountAsync();

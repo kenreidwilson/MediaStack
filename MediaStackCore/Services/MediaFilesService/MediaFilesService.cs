@@ -9,9 +9,9 @@ using MediaStackCore.Services.HasherService;
 using Microsoft.Extensions.Logging;
 using MimeDetective.Extensions;
 
-namespace MediaStackCore.Controllers
+namespace MediaStackCore.Services.MediaFilesService
 {
-    public class FileSystemController : IFileSystemController
+    public class MediaFilesService : IMediaFilesService
     {
         #region Data members
 
@@ -31,7 +31,7 @@ namespace MediaStackCore.Controllers
 
         #region Constructors
 
-        public FileSystemController(IFileSystem fileSystem, IHasher hasher, ILogger<FileSystemController> logger)
+        public MediaFilesService(IFileSystem fileSystem, IHasher hasher, ILogger<MediaFilesService> logger)
         {
             this.FileSystem = fileSystem;
 
@@ -185,12 +185,6 @@ namespace MediaStackCore.Controllers
             return mediaDataDictionary;
         }
 
-        /// <summary>
-        ///     Determines where the Media should be stored on disk
-        ///     based on its Category, Aritst, and Album.
-        /// </summary>
-        /// <param name="media"></param>
-        /// <returns></returns>
         private string determineMediaFullFilePath(Media media)
         {
             if (media.Path == null)

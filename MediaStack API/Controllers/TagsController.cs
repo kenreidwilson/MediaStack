@@ -6,7 +6,7 @@ using MediaStack_API.Models.Responses;
 using MediaStack_API.Models.ViewModels;
 using MediaStackCore.Data_Access_Layer;
 using MediaStackCore.Models;
-using MediaStackCore.Services.UnitOfWorkService;
+using MediaStackCore.Services.UnitOfWorkFactoryService;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -19,7 +19,7 @@ namespace MediaStack_API.Controllers
     {
         #region Properties
 
-        protected IUnitOfWorkService UnitOfWorkService { get; }
+        protected IUnitOfWorkFactory UnitOfWorkFactory { get; }
 
         protected IMapper Mapper { get; }
 
@@ -29,9 +29,9 @@ namespace MediaStack_API.Controllers
 
         #region Constructors
 
-        public TagsController(IUnitOfWorkService unitOfWorkService, IMapper mapper)
+        public TagsController(IUnitOfWorkFactory unitOfWorkFactory, IMapper mapper)
         {
-            this.UnitOfWorkService = unitOfWorkService;
+            this.UnitOfWorkFactory = unitOfWorkFactory;
             this.Mapper = mapper;
         }
 
@@ -47,7 +47,7 @@ namespace MediaStack_API.Controllers
                 return BadRequest(new BaseResponse(null, "You must provide a valid Tag ID or Name."));
             }
 
-            using (var unitOfWork = this.UnitOfWorkService.Create())
+            using (var unitOfWork = this.UnitOfWorkFactory.Create())
             {
                 Tag tag = await unitOfWork.Tags
                                           .Get()
@@ -70,7 +70,7 @@ namespace MediaStack_API.Controllers
                 return BadRequest();
             }
 
-            using (var unitOfWork = this.UnitOfWorkService.Create())
+            using (var unitOfWork = this.UnitOfWorkFactory.Create())
             {
                 Tag tag = await unitOfWork.Tags.Get().FirstOrDefaultAsync(t => t.Name == tagVm.Name);
 
@@ -96,7 +96,7 @@ namespace MediaStack_API.Controllers
                 return BadRequest();
             }
 
-            using (var unitOfWork = this.UnitOfWorkService.Create())
+            using (var unitOfWork = this.UnitOfWorkFactory.Create())
             {
                 var tagModel = await unitOfWork.Tags
                                     .Get()
@@ -122,7 +122,7 @@ namespace MediaStack_API.Controllers
         [HttpDelete]
         public async Task<IActionResult> Delete([FromQuery] TagViewModel potentialTag)
         {
-            using (var unitOfWork = this.UnitOfWorkService.Create())
+            using (var unitOfWork = this.UnitOfWorkFactory.Create())
             {
                 var tag = await unitOfWork.Tags
                                          .Get()
@@ -143,7 +143,7 @@ namespace MediaStack_API.Controllers
         [HttpGet("Search")]
         public async Task<IActionResult> Search([FromQuery] TagSearchQuery tagsQuery)
         {
-            using (IUnitOfWork unitOfWork = this.UnitOfWorkService.Create())
+            using (IUnitOfWork unitOfWork = this.UnitOfWorkFactory.Create())
             {
                 IQueryable<Tag> query = tagsQuery.GetQuery(unitOfWork);
                 int total = await query.CountAsync();

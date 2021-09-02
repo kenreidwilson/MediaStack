@@ -3,8 +3,8 @@ using System.IO;
 using System.IO.Abstractions;
 using System.Threading.Tasks;
 using ImageMagick;
-using MediaStackCore.Controllers;
 using MediaStackCore.Models;
+using MediaStackCore.Services.MediaFilesService;
 using Xabe.FFmpeg;
 
 namespace MediaStack_API.Services.Thumbnailer
@@ -23,13 +23,13 @@ namespace MediaStack_API.Services.Thumbnailer
 
         protected IFileSystem FileSystem { get; }
 
-        protected IFileSystemController FSController { get; }
+        protected IMediaFilesService FSController { get; }
 
         #endregion
 
         #region Methods
 
-        public Thumbnailer(IFileSystem fileSystem, IFileSystemController controller)
+        public Thumbnailer(IFileSystem fileSystem, IMediaFilesService controller)
         {
             if (string.IsNullOrEmpty(this.ThumbnailDirectory))
             {
