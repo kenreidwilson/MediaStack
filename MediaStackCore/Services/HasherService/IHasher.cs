@@ -17,8 +17,6 @@ namespace MediaStackCore.Services.HasherService
 
         public Task<string> CalculateHashAsync(Stream stream, string cacheId = null);
 
-        public void ResetCache();
-
         #endregion
     }
 }

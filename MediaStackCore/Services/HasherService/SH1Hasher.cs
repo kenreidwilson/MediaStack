@@ -59,11 +59,6 @@ namespace MediaStackCore.Services.HasherService
             }
         }
 
-        public void ResetCache()
-        {
-            this.hashCache.Clear();
-        }
-
         #endregion
     }
 }
