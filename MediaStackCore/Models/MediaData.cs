@@ -34,7 +34,7 @@ namespace MediaStackCore.Models
 
         public Stream GetDataStream()
         {
-            return this.FileSystem.File.Open(this.FullPath, FileMode.Open);
+            return this.FileSystem.File.Open(this.FullPath, FileMode.Open, FileAccess.Read, FileShare.Read);
         }
 
         public byte[] GetDataBytes()
