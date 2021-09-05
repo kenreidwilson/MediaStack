@@ -16,11 +16,11 @@ namespace MediaStack_API.Models.Requests
         [Required]
         public int? ID { get; set; }
 
-        public int? CategoryID { get; set; }
+        public int? CategoryID { get; set; } = 0;
 
-        public int? ArtistID { get; set; }
+        public int? ArtistID { get; set; } = 0;
 
-        public int? AlbumID { get; set; }
+        public int? AlbumID { get; set; } = 0;
 
         public int[] TagIDs { get; set; } = null;
 
@@ -38,6 +38,7 @@ namespace MediaStack_API.Models.Requests
         public async Task<Media> UpdateMedia(IUnitOfWork unitOfWork)
         {
             var media = await unitOfWork.Media.Get()
+                                        .AsTracking()
                                         .Include(m => m.Tags)
                                         .FirstOrDefaultAsync(m => m.ID == this.ID);
             if (media == null)
@@ -45,31 +46,60 @@ namespace MediaStack_API.Models.Requests
                 throw new MediaNotFoundException();
             }
 
-            if (this.CategoryID != null)
+            if (this.CategoryID != 0)
             {
-                if (!await unitOfWork.Categories.Get().AnyAsync(c => c.ID == this.CategoryID))
+                Category newCategory = null;
+                if (this.CategoryID != null)
                 {
-                    throw new BadRequestException();
+                    newCategory = await unitOfWork.Categories.Get().FirstOrDefaultAsync(c => c.ID == this.CategoryID);
+                    if (newCategory == null)
+                    {
+                        throw new BadRequestException();
+                    }
                 }
-                media.CategoryID = this.CategoryID;
+
+                media.Category = newCategory;
+                media.CategoryID = newCategory?.ID;
             }
 
-            if (this.ArtistID != null)
+            if (this.ArtistID != 0)
             {
-                if (media.CategoryID == null || !await unitOfWork.Artists.Get().AnyAsync(a => a.ID == this.ArtistID))
+                Artist newArtist = null;
+                if (this.ArtistID != null)
                 {
-                    throw new BadRequestException();
+                    if (media.CategoryID == null)
+                    {
+                        throw new BadRequestException();
+                    }
+                    newArtist = await unitOfWork.Artists.Get().FirstOrDefaultAsync(a => a.ID == this.ArtistID);
+                    if (newArtist == null)
+                    {
+                        throw new BadRequestException();
+                    }
                 }
-                media.ArtistID = this.ArtistID;
+
+                media.Artist = newArtist;
+                media.ArtistID = newArtist?.ID;
             }
 
-            if (this.AlbumID != null)
+            if (this.AlbumID != 0)
             {
-                if (media.CategoryID == null || media.ArtistID == null || !await unitOfWork.Albums.Get().AnyAsync(a => a.ID == this.AlbumID))
+                Album newAlbum = null;
+                if (this.AlbumID != null)
                 {
-                    throw new BadRequestException();
+                    if (media.CategoryID == null || media.ArtistID == null)
+                    {
+                        throw new BadRequestException();
+                    }
+                    newAlbum = await unitOfWork.Albums.Get().FirstOrDefaultAsync(a => a.ID == this.AlbumID);
+                    if (newAlbum == null || newAlbum.ArtistID != this.ArtistID)
+                    {
+                        throw new BadRequestException();
+                    }
                 }
-                media.AlbumID = this.AlbumID;
+
+                media.Album = newAlbum;
+                media.AlbumID = newAlbum?.ID;
             }
 
             if (this.AlbumOrder != null)
