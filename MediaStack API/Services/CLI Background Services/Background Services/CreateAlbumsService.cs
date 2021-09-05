@@ -40,6 +40,10 @@ namespace MediaStack_API.Services.CLI_Background_Services.Background_Services
             List<IEnumerable<string>> listOfAlbumNamesWithArtistNameFirst = new List<IEnumerable<string>>();
             foreach (string artistName in artistNameAlbumNamesDictionary.Keys)
             {
+                if (!artistNameAlbumNamesDictionary[artistName].Any())
+                {
+                    continue;
+                }
                 List<string> albumNamesWithArtistNameFirst = new List<string> {
                     artistName
                 };

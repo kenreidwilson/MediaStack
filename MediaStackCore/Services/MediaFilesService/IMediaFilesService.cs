@@ -36,7 +36,7 @@ namespace MediaStackCore.Services.MediaFilesService
         public MediaData MoveMediaFileToProperLocation(Media media);
 
         public IDictionary<Media, MediaData> MoveAlbumToProperLocation(Album album);
-
+            
         #endregion
     }
 }

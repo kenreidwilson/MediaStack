@@ -111,7 +111,17 @@ namespace MediaStackCore.Services.MediaFilesService
 
             foreach (IDirectoryInfo artistDirectory in this.FileSystem.GetDirectoriesAtLevel(this.MediaDirectory, 1))
             {
-                artistAlbumsDictionary[artistDirectory.Name] = artistDirectory.GetDirectories().Select(d => d.Name);
+                IEnumerable<string> albumNames = artistDirectory.GetDirectories().Select(d => d.Name);
+                if (!artistAlbumsDictionary.ContainsKey(artistDirectory.Name))
+                {
+                    artistAlbumsDictionary[artistDirectory.Name] = albumNames;
+                }
+                else
+                {
+                    IList<string> currentAlbumNames = artistAlbumsDictionary[artistDirectory.Name].ToList();
+                    artistAlbumsDictionary[artistDirectory.Name] = currentAlbumNames
+                        .Concat(albumNames.Where(name => !currentAlbumNames.Contains(name)));
+                }
             }
 
             return artistAlbumsDictionary;
