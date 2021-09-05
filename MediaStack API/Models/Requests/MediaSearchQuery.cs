@@ -59,8 +59,8 @@ namespace MediaStack_API.Models.Requests
             if (this.ArtistID != null) query = query.Where(m => m.ArtistID == this.ArtistID);
             if (this.AlbumID != null) query = query.Where(m => m.AlbumID == this.AlbumID);
             if (this.Score != null) query = query.Where(m => m.Score == this.Score);
-            if (this.GreaterThanScore != null) query = query.Where(m => m.Score > this.Score);
-            if (this.LessThanScore != null) query = query.Where(m => m.Score < this.Score);
+            if (this.GreaterThanScore != null) query = query.Where(m => m.Score > this.GreaterThanScore);
+            if (this.LessThanScore != null) query = query.Where(m => m.Score < this.LessThanScore);
             if (this.Type != null) query = query.Where(m => m.Type == this.Type);
             this.BlacklistAlbumIDs?.ForEach(id => query = query.Where(m => m.AlbumID != id));
             this.BlacklistArtistIDs?.ForEach(id => query = query.Where(m => m.ArtistID != id));
