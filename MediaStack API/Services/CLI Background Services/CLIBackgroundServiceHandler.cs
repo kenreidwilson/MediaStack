@@ -67,14 +67,14 @@ namespace MediaStack_API.Services.CLI_Background_Services
                 await this.RunCreateAlbumService(stoppingToken);
             }
 
-            if (this.Configuration.GetValue<bool>("createNew"))
-            {
-                await this.RunCreateNewMediaService(stoppingToken);
-            }
-
             if (this.Configuration.GetValue<bool>("disableMissing"))
             {
                 await this.RunDisableMissingMediaService(stoppingToken);
+            }
+
+            if (this.Configuration.GetValue<bool>("createNew"))
+            {
+                await this.RunCreateNewMediaService(stoppingToken);
             }
 
             if (this.Configuration.GetValue<bool>("verify"))
