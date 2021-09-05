@@ -1,5 +1,4 @@
 ﻿using System;
-using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using AutoMapper;
@@ -25,6 +24,8 @@ namespace MediaStack_API.Controllers
         #region Data members
 
         private static readonly object WriteLock = new();
+
+        protected readonly bool MoveFile = true; //TODO: Pull from env variable.
 
         #endregion
 
@@ -120,12 +121,12 @@ namespace MediaStack_API.Controllers
                 return BadRequest();
             }
 
-            Media newMedia;
+            Media updateMedia;
             using (var unitOfWork = this.UnitOfWorkFactory.Create())
             {
                 try
                 {
-                    newMedia = await editRequest.UpdateMedia(unitOfWork);
+                    updateMedia = await editRequest.UpdateMedia(unitOfWork);
                 }
                 catch (MediaEditRequest.BadRequestException)
                 {
@@ -136,11 +137,16 @@ namespace MediaStack_API.Controllers
                     return NotFound();
                 }
 
-                unitOfWork.Media.Update(newMedia);
+                if (this.MoveFile && (editRequest.CategoryID != null || editRequest.ArtistID != null || editRequest.AlbumID != null))
+                {
+                    updateMedia.Path = this.MediaFilesService.MoveMediaFileToProperLocation(updateMedia).RelativePath;
+                }
+
+                unitOfWork.Media.Update(updateMedia);
                 await unitOfWork.SaveAsync();
             }
 
-            return Ok(new BaseResponse(this.Mapper.Map<MediaViewModel>(newMedia)));
+            return Ok(new BaseResponse(this.Mapper.Map<MediaViewModel>(updateMedia)));
         }
 
         [HttpPost("Search")]
