@@ -15,7 +15,7 @@ namespace MediaStackCore.Data_Access_Layer
 
         public DbSet<Artist> Artists { get; set; }
 
-        public MediaStackContext() => Database.EnsureCreated();
+        public MediaStackContext() => base.Database.EnsureCreated();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -80,8 +80,9 @@ namespace MediaStackCore.Data_Access_Layer
         {
             if (!optionsBuilder.IsConfigured)
             {
-
+                optionsBuilder.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
                 optionsBuilder.UseSqlite($"Data Source=MediaStack.db;Cache=Shared");
+
             }
 
             base.OnConfiguring(optionsBuilder);
