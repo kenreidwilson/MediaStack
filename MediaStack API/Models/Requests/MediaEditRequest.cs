@@ -38,8 +38,8 @@ namespace MediaStack_API.Models.Requests
         public async Task<Media> UpdateMedia(IUnitOfWork unitOfWork)
         {
             var media = await unitOfWork.Media.Get()
-                                        .AsTracking()
                                         .Include(m => m.Tags)
+                                        .AsTracking()
                                         .FirstOrDefaultAsync(m => m.ID == this.ID);
             if (media == null)
             {
@@ -117,21 +117,23 @@ namespace MediaStack_API.Models.Requests
 
             if (this.TagIDs != null)
             {
-                List<Tag> newTags = new List<Tag>();
-
-                foreach (int tagId in this.TagIDs)
+                ICollection<Tag> newMediaTags = media.Tags.Where(t => this.TagIDs.Contains(t.ID)).ToList();
+                try
                 {
-                    try
+                    foreach (int id in this.TagIDs)
                     {
-                        newTags.Add(unitOfWork.Tags.Get().First(t => t.ID == tagId));
+                        if (!media.Tags.Select(t => t.ID).Contains(id))
+                        {
+                            newMediaTags.Add(unitOfWork.Tags.Get().First(t => t.ID == id));
+                        }
                     }
-                    catch (InvalidOperationException)
-                    {
-                        throw new BadRequestException();
-                    }
-                }
 
-                media.Tags = newTags;
+                    media.Tags = newMediaTags;
+                }
+                catch (InvalidOperationException)
+                {
+                    throw new BadRequestException();
+                }
 
                 if (this.TagIDs.Length != media.Tags.Count)
                 {
