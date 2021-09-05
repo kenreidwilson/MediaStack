@@ -137,7 +137,7 @@ namespace MediaStack_API.Controllers
                     return NotFound();
                 }
 
-                if (this.MoveFile && (editRequest.CategoryID != null || editRequest.ArtistID != null || editRequest.AlbumID != null))
+                if (this.MoveFile && (editRequest.CategoryID != 0 || editRequest.ArtistID != 0 || editRequest.AlbumID != 0))
                 {
                     updateMedia.Path = this.MediaFilesService.MoveMediaFileToProperLocation(updateMedia).RelativePath;
                 }
