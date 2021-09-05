@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using AutoMapper;
@@ -181,15 +182,8 @@ namespace MediaStack_API.Controllers
                     return NotFound();
                 }
 
-                try
-                {
-                    return File(await this.MediaFilesService.GetMediaData(media).GetDataBytesAsync(),
-                        media.Type == MediaType.Video ? "video/mp4" : "image/png");
-                }
-                catch (Exception)
-                {
-                    return StatusCode(500);
-                }
+                return File(this.MediaFilesService.GetMediaData(media).GetDataStream(),
+                    media.Type == MediaType.Video ? "video/mp4" : "image/png");
             }
         }
 
