@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO.Abstractions;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -45,15 +46,15 @@ namespace MediaStack_API.Services.CLI_Background_Services.Background_Services
 
         protected override async Task ProcessData(object data)
         {
-            if (data is MediaData mediaData)
+            if (data is IFileInfo mediaFile)
             {
-                Logger.LogDebug($"Processing Media: {mediaData.RelativePath}");
+                Logger.LogDebug($"Processing Media: {mediaFile.Name}");
 
                 using var unitOfWork = this.unitOfWorkFactory.Create();
 
                 try
                 {
-                    var media = await this.mediaService.CreateNewMediaOrFixMediaPathAsync(mediaData);
+                    var media = await this.mediaService.CreateNewMediaOrFixMediaPathAsync(mediaFile);
                     if (media != null)
                     {
                         BatchedEntities[media.Hash] = media;
@@ -61,7 +62,7 @@ namespace MediaStack_API.Services.CLI_Background_Services.Background_Services
                 }
                 catch (ArgumentException e)
                 {
-                    Logger.LogDebug($"Error processing {mediaData.RelativePath}: {e.Message}");
+                    Logger.LogDebug($"Error processing {mediaFile.Name}: {e.Message}");
                 }
                 catch (TaskCanceledException)
                 {
@@ -88,9 +89,9 @@ namespace MediaStack_API.Services.CLI_Background_Services.Background_Services
             BatchedEntities.Clear();
         }
 
-        private async Task<IEnumerable<MediaData>> getNewMediaData()
+        private async Task<IEnumerable<IFileInfo>> getNewMediaData()
         {
-            var mediaDataList = new List<MediaData>();
+            var mediaDataList = new List<IFileInfo>();
             this.mediaScanner.OnNewMediaFileFound += mediaDataList.Add;
             await this.mediaScanner.FindNewMedia();
             return mediaDataList;

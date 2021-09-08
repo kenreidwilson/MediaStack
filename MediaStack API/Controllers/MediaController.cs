@@ -89,7 +89,7 @@ namespace MediaStack_API.Controllers
                 return BadRequest(new BaseResponse(null, "No File"));
             }
 
-            Media media = null;
+            Media media;
             using (var unitOfWork = this.UnitOfWorkFactory.Create())
             {
                 await using (var stream = file.OpenReadStream())
@@ -137,9 +137,21 @@ namespace MediaStack_API.Controllers
                     return NotFound();
                 }
 
-                if (this.MoveFile && (editRequest.CategoryID != 0 || editRequest.ArtistID != 0 || editRequest.AlbumID != 0))
+                if (this.MoveFile &&
+                    (editRequest.CategoryID != 0 || editRequest.ArtistID != 0 || editRequest.AlbumID != 0))
                 {
-                    updateMedia.Path = this.MediaFilesService.MoveMediaFileToProperLocation(updateMedia).RelativePath;
+                    updateMedia.Category ??= updateMedia.CategoryID == null
+                        ? null
+                        : unitOfWork.Categories.Get().First(c => c.ID == updateMedia.CategoryID);
+                    updateMedia.Artist ??= updateMedia.ArtistID == null
+                        ? null
+                        : unitOfWork.Artists.Get().First(a => a.ID == updateMedia.ArtistID);
+                    updateMedia.Album ??= updateMedia.AlbumID == null
+                        ? null
+                        : unitOfWork.Albums.Get().First(a => a.ID == updateMedia.AlbumID);
+                    updateMedia.Path =
+                        this.MediaFilesService.GetRelativePath(
+                            this.MediaFilesService.MoveMediaFileToProperLocation(updateMedia));
                 }
 
                 unitOfWork.Media.Update(updateMedia);
@@ -188,7 +200,7 @@ namespace MediaStack_API.Controllers
                     return NotFound();
                 }
 
-                return File(this.MediaFilesService.GetMediaData(media).GetDataStream(),
+                return File(this.MediaFilesService.GetMediaFileInfo(media).OpenRead(),
                     media.Type == MediaType.Video ? "video/mp4" : "image/png");
             }
         }

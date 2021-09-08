@@ -36,14 +36,14 @@ namespace MediaStackCore.Services.MediaScannerService
         {
             var tasks = new List<Task>();
 
-            foreach (var mediaData in this.mediaFilesService.GetAllMediaData())
+            foreach (var mediaFile in this.mediaFilesService.GetAllMediaFiles())
             {
                 tasks.Add(Task.Run(() =>
                 {
                     using var unitOfWork = this.unitOfWorkFactory.Create();
-                    if (!unitOfWork.Media.Get().Any(m => m.Path == mediaData.RelativePath))
+                    if (!unitOfWork.Media.Get().Any(m => m.Path == this.mediaFilesService.GetRelativePath(mediaFile)))
                     {
-                        this.OnNewMediaFileFound?.Invoke(mediaData);
+                        this.OnNewMediaFileFound?.Invoke(mediaFile);
                     }
                 }));
             }
@@ -78,19 +78,19 @@ namespace MediaStackCore.Services.MediaScannerService
             {
                 tasks.Add(Task.Run(async () =>
                 {
-                    var mediaData = this.mediaFilesService.GetMediaData(media);
+                    var mediaFile = this.mediaFilesService.GetMediaFileInfo(media);
 
                     if (media == null)
                     {
                         return;
                     }
 
-                    await using var mediaDataStream = mediaData.GetDataStream();
+                    await using var mediaDataStream = mediaFile.OpenRead();
                     if (await this.mediaFilesService.Hasher.CalculateHashAsync(mediaDataStream,
-                        mediaData.FullPath) != media.Hash)
+                        mediaFile.FullName) != media.Hash)
                     {
                         this.OnMissingMediaFound?.Invoke(media);
-                        this.OnNewMediaFileFound?.Invoke(mediaData);
+                        this.OnNewMediaFileFound?.Invoke(mediaFile);
                     }
                 }));
             }

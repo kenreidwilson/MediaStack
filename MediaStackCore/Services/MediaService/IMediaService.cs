@@ -1,4 +1,5 @@
 ﻿using System.IO;
+using System.IO.Abstractions;
 using System.Threading.Tasks;
 using MediaStackCore.Models;
 
@@ -12,13 +13,13 @@ namespace MediaStackCore.Services.MediaService
 
         public bool IsMediaDisabled(Media media);
 
-        public Media CreateMedia(MediaData mediaData);
+        public Media CreateMedia(IFileInfo mediaData);
 
-        public Task<Media> CreateMediaAsync(MediaData mediaData);
+        public Task<Media> CreateMediaAsync(IFileInfo mediaFile);
 
-        public Media CreateNewMediaOrFixMediaPath(MediaData mediaData);
+        public Media CreateNewMediaOrFixMediaPath(IFileInfo mediaFile);
 
-        public Task<Media> CreateNewMediaOrFixMediaPathAsync(MediaData mediaData);
+        public Task<Media> CreateNewMediaOrFixMediaPathAsync(IFileInfo mediaFile);
 
         public Media WriteStreamAndCreateMedia(Stream stream);
 

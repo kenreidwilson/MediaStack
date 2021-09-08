@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System.IO.Abstractions;
+using System.Threading.Tasks;
 using MediaStackCore.Models;
 
 namespace MediaStackCore.Services.MediaScannerService
@@ -9,7 +10,7 @@ namespace MediaStackCore.Services.MediaScannerService
 
         public delegate void MissingMediaDelegate(Media media);
 
-        public delegate void NewMediaFileDelegate(MediaData mediaData);
+        public delegate void NewMediaFileDelegate(IFileInfo mediaFile);
 
         #endregion
 

@@ -1,8 +1,8 @@
 ﻿using System.Collections.Generic;
+using System.IO.Abstractions;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using MediaStackCore.Extensions;
 using MediaStackCore.Models;
 using MediaStackCore.Services.MediaScannerService;
 using MediaStackCore.Services.MediaService;
@@ -44,7 +44,7 @@ namespace MediaStack_API.Services.CLI_Background_Services.Background_Services
             using var unitOfWork = this.unitOfWorkFactory.Create();
 
             IList<Media> mediaWithChangedFile = new List<Media>();
-            IList<MediaData> mediaDataWhoReplaceOldMediaFile = new List<MediaData>();
+            IList<IFileInfo> mediaDataWhoReplaceOldMediaFile = new List<IFileInfo>();
 
             this.mediaScanner.OnMissingMediaFound += mediaWithChangedFile.Add;
             this.mediaScanner.OnNewMediaFileFound += mediaDataWhoReplaceOldMediaFile.Add;
@@ -58,10 +58,10 @@ namespace MediaStack_API.Services.CLI_Background_Services.Background_Services
         {
             if (data is Media media)
             {
-                BatchedEntities[media.Hash] = this.unitOfWorkFactory.Create().DisableMedia(media);
+                BatchedEntities[media.Hash] = this.mediaService.DisableMedia(media);
             }
 
-            if (data is MediaData mediaData)
+            if (data is IFileInfo mediaData)
             {
                 var newMedia = await this.mediaService.CreateNewMediaOrFixMediaPathAsync(mediaData);
 

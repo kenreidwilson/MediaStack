@@ -103,7 +103,7 @@ namespace MediaStack_API.Services.Thumbnailer
             {
                 try
                 {
-                    using (MagickImage image = new MagickImage(this.FSController.GetMediaData(media).GetDataStream()))
+                    using (MagickImage image = new MagickImage(this.FSController.GetMediaFileInfo(media).OpenRead()))
                     {
                         image.Thumbnail(new MagickGeometry(this.thumbnailWidth, this.thumbnailHeight));
                         image.Write(this.determineThumbnailLocation(media));
@@ -129,7 +129,7 @@ namespace MediaStack_API.Services.Thumbnailer
         protected async Task<bool> CreateThumbnailFromVideo(Media media)
         {
             var result = FFmpeg.Conversions.New()
-                               .AddParameter($"-i \"{this.FSController.GetMediaData(media).FullPath}\"")
+                               .AddParameter($"-i \"{this.FSController.GetMediaFileInfo(media).FullName}\"")
                                .AddParameter("-ss 00:00:01.000")
                                .AddParameter("-vframes 1")
                                .AddParameter("-f image2")

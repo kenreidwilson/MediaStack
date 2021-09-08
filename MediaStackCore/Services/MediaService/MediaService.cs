@@ -1,9 +1,9 @@
 ﻿using System;
 using System.IO;
+using System.IO.Abstractions;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using MediaStackCore.Data_Access_Layer;
 using MediaStackCore.Models;
 using MediaStackCore.Services.MediaFilesService;
 using MediaStackCore.Services.UnitOfWorkFactoryService;
@@ -44,45 +44,49 @@ namespace MediaStackCore.Services.MediaService
             return media.Path == null;
         }
 
-        public Media CreateMedia(MediaData mediaData)
+        public Media CreateMedia(IFileInfo mediaFile)
         {
-            using (Stream mediaDataStream = mediaData.GetDataStream())
+            using (var mediaDataStream = mediaFile.OpenRead())
             {
-                MediaType? type = this.MediaFilesService.GetMediaDataStreamType(mediaDataStream);
+                var type = this.MediaFilesService.TypeFinder.GetMediaFileStreamType(mediaDataStream);
 
                 if (type == null)
                 {
                     throw new ArgumentException("Invalid Media Type");
                 }
 
-                using (IUnitOfWork unitOfWork = this.UnitOfWorkFactory.Create())
+                using (var unitOfWork = this.UnitOfWorkFactory.Create())
                 {
-                    int? artistId = unitOfWork.Artists.Get().FirstOrDefault(a => a.Name == mediaData.GetArtistName())?.ID;
-                    return new()
-                    {
-                        CategoryID = unitOfWork.Categories.Get().FirstOrDefault(c => c.Name == mediaData.GetCategoryName())?.ID,
+                    var artistId = unitOfWork.Artists.Get()
+                                             .FirstOrDefault(a =>
+                                                 a.Name == this.MediaFilesService.GetArtistName(mediaFile))?.ID;
+                    return new Media() {
+                        CategoryID = unitOfWork.Categories.Get()
+                                               .FirstOrDefault(c =>
+                                                   c.Name == this.MediaFilesService.GetCategoryName(mediaFile))?.ID,
                         ArtistID = artistId,
-                        AlbumID = unitOfWork.Albums.Get().FirstOrDefault(a => a.ArtistID == artistId && a.Name == mediaData.GetAlbumName())?.ID,
-                        Path = mediaData.RelativePath,
-                        Hash = this.MediaFilesService.Hasher.CalculateHash(mediaDataStream, mediaData.FullPath),
+                        AlbumID = unitOfWork.Albums.Get().FirstOrDefault(a =>
+                            a.ArtistID == artistId && a.Name == this.MediaFilesService.GetAlbumName(mediaFile))?.ID,
+                        Path = this.MediaFilesService.GetRelativePath(mediaFile),
+                        Hash = this.MediaFilesService.Hasher.CalculateHash(mediaDataStream, mediaFile.FullName),
                         Type = type
                     };
                 }
             }
         }
 
-        public async Task<Media> CreateMediaAsync(MediaData mediaData)
+        public async Task<Media> CreateMediaAsync(IFileInfo mediaFile)
         {
-            CancellationTokenSource tokenSource = new CancellationTokenSource();
+            var tokenSource = new CancellationTokenSource();
 
             string hash = null;
             MediaType? type = null;
 
             var hashAndTypeTask = Task.Run(async () =>
             {
-                await using (Stream mediaStream = mediaData.GetDataStream())
+                await using (var mediaStream = mediaFile.OpenRead())
                 {
-                    type = this.MediaFilesService.GetMediaDataStreamType(mediaStream);
+                    type = this.MediaFilesService.TypeFinder.GetMediaFileStreamType(mediaStream);
 
                     if (type == null)
                     {
@@ -98,19 +102,24 @@ namespace MediaStackCore.Services.MediaService
             int? albumId = null;
             var artistAndAlbumTask = Task.Run(async () =>
             {
-                using IUnitOfWork taskUnitOfWork = this.UnitOfWorkFactory.Create();
-                artistId = (await taskUnitOfWork.Artists.Get().FirstOrDefaultAsync(a => a.Name == mediaData.GetArtistName(), tokenSource.Token))?.ID;
+                using var taskUnitOfWork = this.UnitOfWorkFactory.Create();
+                artistId = (await taskUnitOfWork.Artists.Get()
+                                                .FirstOrDefaultAsync(
+                                                    a => a.Name == this.MediaFilesService.GetArtistName(mediaFile),
+                                                    tokenSource.Token))?.ID;
                 if (artistId != null)
                 {
                     albumId = (await taskUnitOfWork.Albums.Get().FirstOrDefaultAsync(
-                        a => a.ArtistID == artistId && a.Name == mediaData.GetAlbumName(),
+                        a => a.ArtistID == artistId && a.Name == this.MediaFilesService.GetAlbumName(mediaFile),
                         tokenSource.Token))?.ID;
                 }
-
             }, tokenSource.Token);
 
-            using IUnitOfWork unitOfWork = this.UnitOfWorkFactory.Create();
-            var categoryTask = unitOfWork.Categories.Get().FirstOrDefaultAsync(c => c.Name == mediaData.GetCategoryName(), tokenSource.Token);
+            using var unitOfWork = this.UnitOfWorkFactory.Create();
+            var categoryTask = unitOfWork.Categories.Get()
+                                         .FirstOrDefaultAsync(
+                                             c => c.Name == this.MediaFilesService.GetCategoryName(mediaFile),
+                                             tokenSource.Token);
 
             await hashAndTypeTask;
 
@@ -122,9 +131,8 @@ namespace MediaStackCore.Services.MediaService
 
             await artistAndAlbumTask;
 
-            return new Media
-            {
-                Path = mediaData.RelativePath,
+            return new Media {
+                Path = this.MediaFilesService.GetRelativePath(mediaFile),
                 CategoryID = (await categoryTask)?.ID,
                 ArtistID = artistId,
                 AlbumID = albumId,
@@ -133,48 +141,55 @@ namespace MediaStackCore.Services.MediaService
             };
         }
 
-        public Media CreateNewMediaOrFixMediaPath(MediaData mediaData)
+        public Media CreateNewMediaOrFixMediaPath(IFileInfo mediaFile)
         {
-            using (Stream mediaDataStream = mediaData.GetDataStream())
+            using (var mediaDataStream = mediaFile.OpenRead())
             {
-                string hash = this.MediaFilesService.Hasher.CalculateHash(mediaDataStream, mediaData.FullPath);
-                using IUnitOfWork unitOfWork = this.UnitOfWorkFactory.Create();
-                Media potentialMedia = unitOfWork.Media.Get().FirstOrDefault(m => m.Hash == hash);
+                var hash = this.MediaFilesService.Hasher.CalculateHash(mediaDataStream, mediaFile.FullName);
+                using var unitOfWork = this.UnitOfWorkFactory.Create();
+                var potentialMedia = unitOfWork.Media.Get().FirstOrDefault(m => m.Hash == hash);
                 if (potentialMedia != null)
                 {
                     if (potentialMedia.Path == null)
                     {
                         potentialMedia.CategoryID = unitOfWork.Categories.Get()
                                                               .FirstOrDefault(
-                                                                  c => c.Name == mediaData.GetCategoryName())?.ID;
+                                                                  c => c.Name ==
+                                                                       this.MediaFilesService
+                                                                           .GetCategoryName(mediaFile))?.ID;
                         potentialMedia.ArtistID = unitOfWork.Artists.Get()
-                                                            .FirstOrDefault(a => a.Name == mediaData.GetArtistName())?.ID;
+                                                            .FirstOrDefault(a =>
+                                                                a.Name == this.MediaFilesService.GetArtistName(
+                                                                    mediaFile))?.ID;
                         potentialMedia.AlbumID = unitOfWork.Albums.Get()
                                                            .FirstOrDefault(a =>
                                                                a.ArtistID == potentialMedia.ArtistID &&
-                                                               a.Name == mediaData.GetAlbumName())?.ID;
-                        potentialMedia.Path = mediaData.RelativePath;
+                                                               a.Name == this.MediaFilesService.GetAlbumName(mediaFile))
+                                                           ?.ID;
+                        potentialMedia.Path = this.MediaFilesService.GetRelativePath(mediaFile);
                         return potentialMedia;
                     }
-                    throw new ArgumentException($"Duplicate Media: {mediaData.RelativePath}");
+
+                    throw new ArgumentException(
+                        $"Duplicate Media: {this.MediaFilesService.GetRelativePath(mediaFile)}");
                 }
 
-                return this.CreateMedia(mediaData);
+                return this.CreateMedia(mediaFile);
             }
         }
 
-        public async Task<Media> CreateNewMediaOrFixMediaPathAsync(MediaData mediaData)
+        public async Task<Media> CreateNewMediaOrFixMediaPathAsync(IFileInfo mediaFile)
         {
-            CancellationTokenSource tokenSource = new CancellationTokenSource();
+            var tokenSource = new CancellationTokenSource();
 
             string hash = null;
             MediaType? type = null;
 
             var hashAndTypeTask = Task.Run(async () =>
             {
-                await using (Stream mediaStream = mediaData.GetDataStream())
+                await using (var mediaStream = mediaFile.OpenRead())
                 {
-                    type = this.MediaFilesService.GetMediaDataStreamType(mediaStream);
+                    type = this.MediaFilesService.TypeFinder.GetMediaFileStreamType(mediaStream);
 
                     if (type == null)
                     {
@@ -186,27 +201,33 @@ namespace MediaStackCore.Services.MediaService
                 }
             }, tokenSource.Token);
 
-            using IUnitOfWork unitOfWork = this.UnitOfWorkFactory.Create();
-            var categoryTask = unitOfWork.Categories.Get().FirstOrDefaultAsync(c => c.Name == mediaData.GetCategoryName(), tokenSource.Token);
+            using var unitOfWork = this.UnitOfWorkFactory.Create();
+            var categoryTask = unitOfWork.Categories.Get()
+                                         .FirstOrDefaultAsync(
+                                             c => c.Name == this.MediaFilesService.GetCategoryName(mediaFile),
+                                             tokenSource.Token);
 
             int? artistId = null;
             int? albumId = null;
             var artistAndAlbumTask = Task.Run(async () =>
             {
-                using IUnitOfWork taskUnitOfWork = this.UnitOfWorkFactory.Create();
-                artistId = (await taskUnitOfWork.Artists.Get().FirstOrDefaultAsync(a => a.Name == mediaData.GetArtistName(), tokenSource.Token))?.ID;
+                using var taskUnitOfWork = this.UnitOfWorkFactory.Create();
+                artistId = (await taskUnitOfWork.Artists.Get()
+                                                .FirstOrDefaultAsync(
+                                                    a => a.Name == this.MediaFilesService.GetArtistName(mediaFile),
+                                                    tokenSource.Token))?.ID;
                 if (artistId != null)
                 {
                     albumId = (await taskUnitOfWork.Albums.Get().FirstOrDefaultAsync(
-                        a => a.ArtistID == artistId && a.Name == mediaData.GetAlbumName(), 
+                        a => a.ArtistID == artistId && a.Name == this.MediaFilesService.GetAlbumName(mediaFile),
                         tokenSource.Token))?.ID;
                 }
-                
             }, tokenSource.Token);
 
             await hashAndTypeTask;
 
-            var potentialDuplicate = await unitOfWork.Media.Get().FirstOrDefaultAsync(m => m.Hash == hash, tokenSource.Token);
+            var potentialDuplicate =
+                await unitOfWork.Media.Get().FirstOrDefaultAsync(m => m.Hash == hash, tokenSource.Token);
 
             if (potentialDuplicate != null)
             {
@@ -217,7 +238,7 @@ namespace MediaStackCore.Services.MediaService
                 }
 
                 await artistAndAlbumTask;
-                potentialDuplicate.Path = mediaData.RelativePath;
+                potentialDuplicate.Path = this.MediaFilesService.GetRelativePath(mediaFile);
                 potentialDuplicate.CategoryID = (await categoryTask)?.ID;
                 potentialDuplicate.ArtistID = artistId;
                 potentialDuplicate.AlbumID = albumId;
@@ -230,9 +251,8 @@ namespace MediaStackCore.Services.MediaService
             }
 
             await artistAndAlbumTask;
-            return new Media
-            {
-                Path = mediaData.RelativePath,
+            return new Media {
+                Path = this.MediaFilesService.GetRelativePath(mediaFile),
                 CategoryID = (await categoryTask)?.ID,
                 ArtistID = artistId,
                 AlbumID = albumId,
@@ -243,12 +263,12 @@ namespace MediaStackCore.Services.MediaService
 
         public Media WriteStreamAndCreateMedia(Stream stream)
         {
-            return this.CreateMedia(this.MediaFilesService.WriteMediaStream(stream));
+            return this.CreateMedia(this.MediaFilesService.WriteMediaFileStream(stream));
         }
 
         public Task<Media> WriteStreamAndCreateMediaAsync(Stream stream)
         {
-            return this.CreateMediaAsync(this.MediaFilesService.WriteMediaStream(stream));
+            return this.CreateMediaAsync(this.MediaFilesService.WriteMediaFileStream(stream));
         }
 
         #endregion
