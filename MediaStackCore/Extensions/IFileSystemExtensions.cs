@@ -12,21 +12,20 @@ namespace MediaStackCore.Extensions
             int targetLevel,
             int currentLevel = 0)
         {
-            var directoryNames = new List<IDirectoryInfo>();
-
-            foreach (var item in fs.DirectoryInfo.FromDirectoryName(path).GetDirectories().ToList())
+            foreach (var currentDirectoryInfo in fs.DirectoryInfo.FromDirectoryName(path).GetDirectories().ToList())
             {
                 if (currentLevel < targetLevel)
                 {
-                    directoryNames.AddRange(GetDirectoriesAtLevel(fs, item.FullName, targetLevel, currentLevel + 1));
+                    foreach (IDirectoryInfo directoryInfo in GetDirectoriesAtLevel(fs, currentDirectoryInfo.FullName, targetLevel, currentLevel + 1))
+                    {
+                        yield return directoryInfo;
+                    }
                 }
                 else
                 {
-                    directoryNames.Add(item);
+                    yield return currentDirectoryInfo;
                 }
             }
-
-            return directoryNames;
         }
 
         #endregion
