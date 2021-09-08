@@ -96,6 +96,12 @@ namespace MediaStack_API.Services.CLI_Background_Services.Background_Services
             BatchedEntities.Clear();
         }
 
+        protected override void OnFinish()
+        {
+            this.Save();
+            this.Logger.LogInformation("Done Creating Albums");
+        }
+
         private Album getAlbumIfNotExists(Artist artist, string albumName)
         {
             using var unitOfWork = this.unitOfWorkFactory.Create();

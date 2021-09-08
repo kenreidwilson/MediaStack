@@ -62,12 +62,19 @@ namespace MediaStack_API.Services.CLI_Background_Services.Background_Services
             BatchedEntities.Clear();
         }
 
+        protected override void OnFinish()
+        {
+            this.Save();
+            this.Logger.LogInformation("Done Disabling Media");
+        }
+
         private async Task<IEnumerable<Media>> getMissingMedia()
         {
             var missingMedia = new List<Media>();
             var mfc = new MediaScanner(this.mediaFilesService, this.unitOfWorkFactory);
             mfc.OnMissingMediaFound += missingMedia.Add;
             await mfc.FindMissingMedia();
+            Logger.LogInformation($"Found {missingMedia.Count} missing Media");
             return missingMedia;
         }
 

@@ -46,16 +46,9 @@ namespace MediaStack_API.Services.CLI_Background_Services
 
         #region Methods
 
-        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+        protected override Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            if (this.Configuration.GetValue<bool>("background"))
-            {
-                //this.RunServices(stoppingToken);
-            }
-            else
-            {
-                await this.RunServices(stoppingToken);
-            }
+            return this.RunServices(stoppingToken);
         }
 
         protected virtual async Task RunServices(CancellationToken stoppingToken)

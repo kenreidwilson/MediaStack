@@ -60,5 +60,11 @@ namespace MediaStack_API.Services.CLI_Background_Services.Background_Services
 
             BatchedEntities.Clear();
         }
+
+        protected override void OnFinish()
+        {
+            this.Save();
+            this.Logger.LogInformation("Done Organizing Albums");
+        }
     }
 }

@@ -41,7 +41,7 @@ namespace MediaStack_API.Services.CLI_Background_Services.Background_Services
         public override async Task Execute(CancellationToken cancellationToken)
         {
             Logger.LogInformation("Creating New Media");
-            await ExecuteWithData(await this.getNewMediaData(), cancellationToken);
+            await ExecuteWithData(await this.getNewMediaFiles(), cancellationToken);
         }
 
         protected override async Task ProcessData(object data)
@@ -89,12 +89,19 @@ namespace MediaStack_API.Services.CLI_Background_Services.Background_Services
             BatchedEntities.Clear();
         }
 
-        private async Task<IEnumerable<IFileInfo>> getNewMediaData()
+        protected override void OnFinish()
         {
-            var mediaDataList = new List<IFileInfo>();
-            this.mediaScanner.OnNewMediaFileFound += mediaDataList.Add;
+            this.Save();
+            this.Logger.LogInformation("Done Creating New Media.");
+        }
+
+        private async Task<IEnumerable<IFileInfo>> getNewMediaFiles()
+        {
+            var newMediaFiles = new List<IFileInfo>();
+            this.mediaScanner.OnNewMediaFileFound += newMediaFiles.Add;
             await this.mediaScanner.FindNewMedia();
-            return mediaDataList;
+            Logger.LogInformation($"Found {newMediaFiles.Count} new Media");
+            return newMediaFiles;
         }
 
         #endregion

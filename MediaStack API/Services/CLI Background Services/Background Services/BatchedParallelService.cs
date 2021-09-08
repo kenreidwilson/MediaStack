@@ -45,8 +45,7 @@ namespace MediaStack_API.Services.CLI_Background_Services.Background_Services
             }
 
             await Task.WhenAll(taskList);
-            this.Save();
-            this.Logger.LogInformation("Done");
+            this.OnFinish();
         }
 
         protected virtual async Task RunProcessDataTask(object data, CancellationToken cancellationToken)
@@ -76,6 +75,8 @@ namespace MediaStack_API.Services.CLI_Background_Services.Background_Services
         protected abstract Task ProcessData(object data);
 
         protected abstract void Save();
+
+        protected virtual void OnFinish() => this.Save();
 
         #endregion
     }

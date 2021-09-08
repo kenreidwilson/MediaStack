@@ -21,6 +21,8 @@ namespace MediaStack_API.Services.CLI_Background_Services.Background_Services
 
         protected IMediaScanner mediaScanner;
 
+        private bool logDone;
+
         #endregion
 
         #region Constructors
@@ -50,7 +52,9 @@ namespace MediaStack_API.Services.CLI_Background_Services.Background_Services
             this.mediaScanner.OnNewMediaFileFound += mediaDataWhoReplaceOldMediaFile.Add;
 
             await this.mediaScanner.FindChangedMediaFiles();
+            Logger.LogInformation($"Found {mediaWithChangedFile.Count} changed files.");
             await ExecuteWithData(mediaWithChangedFile, cancellationToken);
+            this.logDone = true;
             await ExecuteWithData(mediaDataWhoReplaceOldMediaFile, cancellationToken);
         }
 
@@ -88,6 +92,15 @@ namespace MediaStack_API.Services.CLI_Background_Services.Background_Services
             }
 
             BatchedEntities.Clear();
+        }
+
+        protected override void OnFinish()
+        {
+            this.Save();
+            if (this.logDone)
+            {
+                this.Logger.LogInformation("Done Verifying Media");
+            }
         }
 
         #endregion
