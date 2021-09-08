@@ -15,7 +15,7 @@ namespace MediaStack_API.Services.CLI_Background_Services.Background_Services
 
         protected int BatchSize = 500;
 
-        protected readonly IDictionary<object, T> BatchedEntities;
+        protected readonly ConcurrentDictionary<object, T> BatchedEntities;
 
         private readonly object writeLock = new();
 
@@ -48,7 +48,7 @@ namespace MediaStack_API.Services.CLI_Background_Services.Background_Services
             this.OnFinish();
         }
 
-        protected virtual async Task RunProcessDataTask(object data, CancellationToken cancellationToken)
+        protected virtual Task RunProcessDataTask(object data, CancellationToken cancellationToken)
         {
             if (cancellationToken.IsCancellationRequested)
             {
@@ -57,7 +57,7 @@ namespace MediaStack_API.Services.CLI_Background_Services.Background_Services
 
             try
             {
-                await this.ProcessData(data);
+                Task task = this.ProcessData(data);
                 lock (this.writeLock)
                 {
                     if (this.BatchedEntities.Count >= this.BatchSize)
@@ -65,10 +65,12 @@ namespace MediaStack_API.Services.CLI_Background_Services.Background_Services
                         this.Save();
                     }
                 }
+                return task;
             }
             catch (Exception e)
             {
                 this.Logger.LogError(e.ToString());
+                return Task.CompletedTask;
             }
         }
 
