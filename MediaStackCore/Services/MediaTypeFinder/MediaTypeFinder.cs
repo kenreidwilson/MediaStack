@@ -1,4 +1,4 @@
-﻿using System;
+﻿using System.Collections.Generic;
 using System.IO;
 using MediaStackCore.Models;
 using MimeDetective.Extensions;
@@ -7,6 +7,15 @@ namespace MediaStackCore.Services.MediaTypeFinder
 {
     public class MediaTypeFinder : IMediaTypeFinder
     {
+        protected IDictionary<string, MediaType> MimeMediaTypeDictionary = new Dictionary<string, MediaType> {
+            {"video/mp4", MediaType.Video },
+            {"video/mkv", MediaType.Video },
+            {"video/x-m4v", MediaType.Video },
+            {"image/jpeg", MediaType.Image },
+            {"image/png", MediaType.Image },
+            {"image/gif", MediaType.Animated_Image },
+        };
+
         #region Methods
 
         public MediaType? GetMediaFileStreamType(Stream stream)
@@ -15,45 +24,52 @@ namespace MediaStackCore.Services.MediaTypeFinder
 
             if (fileType == null)
             {
-                // webm and webp are not recognized types, this is a workaround...
-                if (stream is FileStream fStream)
-                {
-                    var extension = fStream.Name.Substring(Math.Max(0, fStream.Name.Length - 5));
-                    if (extension == ".webm")
-                    {
-                        return MediaType.Video;
-                    }
 
-                    if (extension == ".webp")
-                    {
-                        return MediaType.Image;
-                    }
+                if (this.IsWebM(stream))
+                {
+                    return MediaType.Video;
+                }
+
+                if (this.IsWebP(stream))
+                {
+                    return MediaType.Image;
                 }
 
                 return null;
             }
 
-            switch (fileType.Mime)
+            if (this.MimeMediaTypeDictionary.ContainsKey(fileType.Mime))
             {
-                case "video/mp4":
-                    return MediaType.Video;
-                case "video/mkv":
-                    return MediaType.Video;
-                case "video/x-m4v":
-                    return MediaType.Video;
-                case "video/webm": // Not Working
-                    return MediaType.Video;
-                case "image/jpeg":
-                    return MediaType.Image;
-                case "image/png":
-                    return MediaType.Image;
-                case "image/webp": // Not Working
-                    return MediaType.Image;
-                case "image/gif":
-                    return MediaType.Animated_Image;
-                default:
-                    return null;
+                return this.MimeMediaTypeDictionary[fileType.Mime];
             }
+
+            return null;
+        }
+
+        protected bool IsWebM(Stream stream)
+        {
+            stream.Seek(0, SeekOrigin.Begin);
+            int[] magicBytes = new int[4];
+
+            for (int i = 0; i < 4; i++)
+            {
+                magicBytes[i] = stream.ReadByte();
+            }
+
+            return magicBytes[0] == 26 && magicBytes[1] == 69 && magicBytes[2] == 223 && magicBytes[3] == 163;
+        }
+
+        protected bool IsWebP(Stream stream)
+        {
+            stream.Seek(0, SeekOrigin.Begin);
+            int[] magicBytes = new int[4];
+
+            for (int i = 0; i < 4; i++)
+            {
+                magicBytes[i] = stream.ReadByte();
+            }
+
+            return magicBytes[0] == 87 && magicBytes[1] == 69 && magicBytes[2] == 66 && magicBytes[3] == 80;
         }
 
         #endregion
