@@ -43,7 +43,7 @@ namespace MediaStack_API.Services.CLI_Background_Services.Background_Services
                 using (var unitOfWork = this.unitOfWorkFactory.Create())
                 {
                     var coverMedia = unitOfWork.Media
-                                               .Get(m => m.AlbumID == album.ID)
+                                               .Get(m => m.AlbumID == album.ID && m.Path != null)
                                                .OrderBy(m => m.Path)
                                                .FirstOrDefault();
                     if (coverMedia != null)
