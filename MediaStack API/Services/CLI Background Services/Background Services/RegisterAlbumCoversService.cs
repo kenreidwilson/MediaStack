@@ -31,7 +31,7 @@ namespace MediaStack_API.Services.CLI_Background_Services.Background_Services
             Logger.LogInformation("Registering Album covers");
             using (var unitOfWork = this.unitOfWorkFactory.Create())
             {
-                return ExecuteWithData(unitOfWork.Albums.Get(a => a.Media.Any(m => m.AlbumOrder != 0)),
+                return ExecuteWithData(unitOfWork.Albums.Get(a => a.Media.All(m => m.AlbumOrder != 0)),
                     cancellationToken);
             }
         }
