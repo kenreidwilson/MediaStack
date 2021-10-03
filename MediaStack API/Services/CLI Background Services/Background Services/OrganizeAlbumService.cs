@@ -23,7 +23,7 @@ namespace MediaStack_API.Services.CLI_Background_Services.Background_Services
             Logger.LogInformation("Organizing Albums");
             using (IUnitOfWork unitOfWork = this.unitOfWorkFactory.Create())
             {
-                return ExecuteWithData(unitOfWork.Albums.Get(), cancellationToken);
+                return ExecuteWithData(unitOfWork.Albums.Get(a => a.Media.All(m => m.AlbumOrder == -1)), cancellationToken);
             }
         }
 
@@ -34,14 +34,12 @@ namespace MediaStack_API.Services.CLI_Background_Services.Background_Services
                 using (IUnitOfWork unitOfWork = this.unitOfWorkFactory.Create())
                 {
                     IQueryable<Media> mediaQuery = unitOfWork.Media.Get(m => m.AlbumID == album.ID);
-                    if (mediaQuery.All(m => m.AlbumOrder == -1))
+
+                    IList medias = mediaQuery.OrderBy(m => m.Path).ToList();
+                    foreach (Media media in medias)
                     {
-                        IList medias = mediaQuery.OrderBy(m => m.Path).ToList();
-                        foreach (Media media in medias)
-                        {
-                            media.AlbumOrder = medias.IndexOf(media);
-                            BatchedEntities[media.Hash] = media;
-                        }
+                        media.AlbumOrder = medias.IndexOf(media);
+                        BatchedEntities[media.Hash] = media;
                     }
                 }
             }
