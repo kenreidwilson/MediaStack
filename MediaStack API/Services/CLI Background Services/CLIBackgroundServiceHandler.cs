@@ -130,7 +130,7 @@ namespace MediaStack_API.Services.CLI_Background_Services
 
         protected virtual async Task RunRegisterAlbumCoversService(CancellationToken stoppingToken)
         {
-            await new RegisterAlbumCovers(this.Logger, this.UnitOfWorkFactory).Execute(stoppingToken);
+            await new RegisterAlbumCoversService(this.Logger, this.UnitOfWorkFactory).Execute(stoppingToken);
         }
 
         #endregion
