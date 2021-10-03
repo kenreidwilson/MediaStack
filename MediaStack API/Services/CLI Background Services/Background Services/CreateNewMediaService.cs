@@ -57,6 +57,7 @@ namespace MediaStack_API.Services.CLI_Background_Services.Background_Services
                     var media = await this.mediaService.CreateNewMediaOrFixMediaPathAsync(mediaFile);
                     if (media != null)
                     {
+                        //TODO: Duplicate media in same batch is overwritten and not handled.
                         BatchedEntities[media.Hash] = media;
                     }
                 }

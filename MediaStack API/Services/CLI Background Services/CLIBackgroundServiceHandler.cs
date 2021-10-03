@@ -79,6 +79,11 @@ namespace MediaStack_API.Services.CLI_Background_Services
             {
                 await this.RunOrganizeAlbumService(stoppingToken);
             }
+
+            if (this.Configuration.GetValue<bool>("registerCovers"))
+            {
+                await this.RunRegisterAlbumCoversService(stoppingToken);
+            }
         }
 
         protected virtual async Task RunCreateAlbumService(CancellationToken stoppingToken)
@@ -121,6 +126,11 @@ namespace MediaStack_API.Services.CLI_Background_Services
         {
             await new VerifyMediaService(this.Logger, this.UnitOfWorkFactory, this.MediaService, this.MediaScanner)
                 .Execute(stoppingToken);
+        }
+
+        protected virtual async Task RunRegisterAlbumCoversService(CancellationToken stoppingToken)
+        {
+            await new RegisterAlbumCovers(this.Logger, this.UnitOfWorkFactory).Execute(stoppingToken);
         }
 
         #endregion
