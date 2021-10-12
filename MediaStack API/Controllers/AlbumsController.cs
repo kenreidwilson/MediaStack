@@ -104,7 +104,7 @@ namespace MediaStack_API.Controllers
                                  .Select(t => this.Mapper.Map<AlbumViewModel>(t))
                                  .ToListAsync();
 
-                return Ok(new AlbumsSearchResponse(tags, albumQuery.Offset, albumQuery.Count, total));
+                return Ok(new SearchResponse<AlbumViewModel>(tags, albumQuery.Offset, albumQuery.Count, total));
             }
         }
 

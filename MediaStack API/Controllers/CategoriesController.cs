@@ -93,7 +93,7 @@ namespace MediaStack_API.Controllers
                                  .Select(t => this.Mapper.Map<CategoryViewModel>(t))
                                  .ToListAsync();
 
-                return Ok(new CategorySearchResponse(categories, categoryQuery.Offset, categoryQuery.Count, total));
+                return Ok(new SearchResponse<CategoryViewModel>(categories, categoryQuery.Offset, categoryQuery.Count, total));
             }
         }
 

@@ -180,7 +180,7 @@ namespace MediaStack_API.Controllers
                                    .Take(searchQuery.Count)
                                    .Select(m => this.Mapper.Map<MediaViewModel>(m))
                                    .ToListAsync();
-                return Ok(new MediaSearchResponse(medias, searchQuery.Offset, searchQuery.Count, total));
+                return Ok(new SearchResponse<MediaViewModel>(medias, searchQuery.Offset, searchQuery.Count, total));
             }
         }
 

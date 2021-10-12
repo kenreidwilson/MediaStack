@@ -153,7 +153,7 @@ namespace MediaStack_API.Controllers
                                  .Select(t => this.Mapper.Map<TagViewModel>(t))
                                  .ToListAsync();
 
-                return Ok(new TagsSearchResponse(tags, tagsQuery.Offset, tagsQuery.Count, total));
+                return Ok(new SearchResponse<TagViewModel>(tags, tagsQuery.Offset, tagsQuery.Count, total));
             }
         }
 

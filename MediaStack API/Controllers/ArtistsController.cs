@@ -92,7 +92,7 @@ namespace MediaStack_API.Controllers
                                        .Select(t => this.Mapper.Map<ArtistViewModel>(t))
                                        .ToListAsync();
 
-                return Ok(new ArtistsSearchResponse(artists, artistQuery.Offset, artistQuery.Count, total));
+                return Ok(new SearchResponse<ArtistViewModel>(artists, artistQuery.Offset, artistQuery.Count, total));
             }
         }
 
