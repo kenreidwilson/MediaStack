@@ -16,7 +16,7 @@
         "ASPNETCORE_ENVIRONMENT": "Development"
       },
       "dotnetRunMessages": "true",
-      "applicationUrl": "https://localhost:8001;http://localhost:8000;https://192.168.56.1:8001;http://192.168.56.1:8000"
+      "applicationUrl": "http://localhost:8000"
     }
   }
 }

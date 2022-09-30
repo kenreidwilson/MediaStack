@@ -9,6 +9,8 @@ namespace MediaStackCore.Services.MediaTypeFinder
 
         public MediaType? GetMediaFileStreamType(Stream stream);
 
+        public string GetStreamFileExtension(Stream stream);
+
         #endregion
     }
 }

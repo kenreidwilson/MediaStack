@@ -135,7 +135,7 @@ namespace MediaStackCore.Services.MediaFilesService
         public IFileInfo WriteMediaFileStream(Stream mediaFileStream, Media media = null)
         {
             var filePath = media == null
-                ? $@"{this.MediaDirectory}{this.Hasher.CalculateHash(mediaFileStream)}"
+                ? $@"{this.MediaDirectory}{this.Hasher.CalculateHash(mediaFileStream)}.{this.TypeFinder.GetStreamFileExtension(mediaFileStream)}"
                 : this.determineMediaFullFilePath(media);
 
             // TODO: Find a better way.

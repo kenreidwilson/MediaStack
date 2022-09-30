@@ -102,6 +102,7 @@ namespace MediaStack_API.Controllers
                     var potentialDuplicateMedia = unitOfWork.Media.Get().FirstOrDefault(m => m.Hash == media.Hash);
                     if (potentialDuplicateMedia != null)
                     {
+                        this.MediaFilesService.DeleteMediaFile(media);
                         return Ok(new BaseResponse(this.Mapper.Map<MediaViewModel>(potentialDuplicateMedia)));
                     }
 

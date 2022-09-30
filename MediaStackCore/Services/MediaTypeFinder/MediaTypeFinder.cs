@@ -46,6 +46,39 @@ namespace MediaStackCore.Services.MediaTypeFinder
             return null;
         }
 
+        public string GetStreamFileExtension(Stream stream)
+        {
+            var fileType = stream.GetFileType();
+
+            if (fileType == null)
+            {
+
+                if (this.IsWebM(stream))
+                {
+                    return "webm";
+                }
+
+                if (this.IsWebP(stream))
+                {
+                    return "webp";
+                }
+
+                return null;
+            }
+
+            if (this.MimeMediaTypeDictionary.ContainsKey(fileType.Mime))
+            {
+                if (fileType.Mime == "video/x-m4v")
+                {
+                    return "m4v";
+                }
+
+                return fileType.Mime.Split('/')[1];
+            }
+
+            return null;
+        }
+
         protected bool IsWebM(Stream stream)
         {
             stream.Seek(0, SeekOrigin.Begin);
